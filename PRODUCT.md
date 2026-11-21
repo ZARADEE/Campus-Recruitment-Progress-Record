@@ -23,4 +23,4 @@ One job seeker who repeatedly captures job descriptions, tracks several applicat
 - Imported or scraped details remain editable and require user confirmation before saving.
 - Original imported resume files remain on this device; edited resume text is stored locally.
 - Missing publication dates stay unknown; the application never invents them.
-- The prototype demonstrates navigation and editing states without claiming to have a database or a live scraper.
+- The Tauri desktop app provides file import, public-page previews, and SQLite persistence. The browser preview uses sample data and does not persist records.

@@ -26,7 +26,7 @@
 
 ## Windows 开发环境
 
-开发脚本 `scripts/toolchain-env.ps1` 在项目包含本地 `.toolchain` 時使用隔离的 Rustup、Cargo、MSVC 与 SDK；没有本地工具链时使用已安装的系统 Rust 工具链和 MSVC 环境。项目工具链和构建缓存均列入 `.gitignore`。
+开发脚本 `scripts/toolchain-env.ps1` 在项目包含本地 `.toolchain` 时使用隔离的 Rustup、Cargo、MSVC 与 SDK；没有本地工具链时使用已安装的系统 Rust 工具链和 MSVC 环境。项目工具链和构建缓存均列入 `.gitignore`。
 
 根目录 `启动求职进度台.cmd` 指向正式 exe，并设置 `CAMPUS_DATA_DIR` 为项目 `data/`。这个环境变量由启动进程配置，前端没有任意写入路径接口。未设置它时使用标准 Tauri 用户数据目录。
 

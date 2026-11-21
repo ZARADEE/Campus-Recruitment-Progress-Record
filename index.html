@@ -448,7 +448,7 @@
     <aside class="sidebar" aria-label="主导航">
       <div class="brand">
         <div class="brand-mark"><svg class="icon"><use href="#i-steps"/></svg></div>
-        <div class="brand-name">求职进度台<span class="brand-caption">CAMPUS · 2027</span></div>
+        <div class="brand-name">求职进度台</div>
       </div>
       <div class="nav-label">招聘进度</div>
       <nav class="nav-stack">
@@ -494,7 +494,7 @@
         <div id="file-note" class="prototype-note" style="margin-top:11px">浏览器预览可读取 Markdown；Word、CSV 与本地数据保存请使用桌面版。</div>
         <div id="batch-preview" hidden style="margin-top:15px"></div>
         <div id="file-fields" class="form-grid" style="margin-top:15px">
-          <div class="form-field"><label for="file-company">公司</label><input id="file-company" placeholder="例如：字节跳动"></div>
+          <div class="form-field"><label for="file-company">公司</label><input id="file-company" placeholder="例如：示例科技"></div>
           <div class="form-field"><label for="file-title">岗位名称</label><input id="file-title" placeholder="例如：前端开发工程师"></div>
           <div class="form-field"><label for="file-published">发布时间</label><input id="file-published" type="date"></div>
           <div class="form-field"><label for="file-city">工作地点</label><input id="file-city" placeholder="例如：上海"></div>
@@ -536,16 +536,16 @@
     ];
     let jobs = [
       {
-        id: "bytedance", company: "字节跳动", mark: "字", markTone: "coral", title: "前端开发工程师", city: "上海", team: "商业化产品", status: "applied", stageIndex: 5, activeRound: "second", posted: "2026-10-06", created: "2026-10-12", appliedAt: "2026-10-19", updated: "今天 10:42", source: "官网", salary: "面议", tags: ["React", "TypeScript", "B 端产品"],
+        id: "sample-applied", company: "示例科技", mark: "示", markTone: "coral", title: "前端开发工程师", city: "上海", team: "用户产品", status: "applied", stageIndex: 5, activeRound: "second", posted: "2026-10-06", created: "2026-10-12", appliedAt: "2026-10-19", updated: "今天 10:42", source: "官网", salary: "面议", tags: ["React", "TypeScript", "B 端产品"],
         jd: "负责商业化产品的 Web 端研发与体验迭代；参与前端工程建设，和产品、设计及服务端协作交付核心功能。", activity: ["完成二面笔试题复盘", "进入二面流程", "已完成在线测评"], sessions: {
           first: { date: "2026-11-14", result: "通过", summary: "重点讨论项目拆解、React 渲染机制和跨团队协作。", questions: [
-            { id: "bq1", question: "介绍一个你负责的前端项目。你如何拆分模块并推进交付？", answer: "先说明业务目标和约束，再按页面、状态与数据边界拆模块。项目里我把筛选区、结果表格和详情抽屉拆成独立模块，共用查询参数和请求状态。联调阶段用固定接口契约减少前后端等待。" },
-            { id: "bq2", question: "React 中 useMemo 和 useCallback 分别解决什么问题？", answer: "两者用于缓存渲染期间的计算结果和函数引用，是否使用要看依赖变化与子组件是否做了引用比较。它们有维护成本，不应默认套在每个值上。" },
-            { id: "bq3", question: "页面请求失败时，如何设计错误恢复？", answer: "区分可重试的网络错误和不可恢复的业务错误，保留用户已输入条件，提供就地重试并记录请求标识。涉及局部刷新时避免整个页面清空。" }
+            { id: "sq1", question: "介绍一个你负责的前端项目。你如何拆分模块并推进交付？", answer: "先说明业务目标和约束，再按页面、状态与数据边界拆模块。项目里我把筛选区、结果表格和详情抽屉拆成独立模块，共用查询参数和请求状态。联调阶段用固定接口契约减少前后端等待。" },
+            { id: "sq2", question: "React 中 useMemo 和 useCallback 分别解决什么问题？", answer: "两者用于缓存渲染期间的计算结果和函数引用，是否使用要看依赖变化与子组件是否做了引用比较。它们有维护成本，不应默认套在每个值上。" },
+            { id: "sq3", question: "页面请求失败时，如何设计错误恢复？", answer: "区分可重试的网络错误和不可恢复的业务错误，保留用户已输入条件，提供就地重试并记录请求标识。涉及局部刷新时避免整个页面清空。" }
           ] },
           second: { date: "2026-11-21", result: "进行中", summary: "", questions: [
-            { id: "bq4", question: "设计一个支持百万级数据的前端列表，需要考虑哪些方面？", answer: "" },
-            { id: "bq5", question: "项目中如何处理请求竞态和过期响应？", answer: "" }
+            { id: "sq4", question: "设计一个支持百万级数据的前端列表，需要考虑哪些方面？", answer: "" },
+            { id: "sq5", question: "项目中如何处理请求竞态和过期响应？", answer: "" }
           ] },
           third: { date: "", result: "待安排", summary: "", questions: [] },
           hr: { date: "", result: "待安排", summary: "", questions: [] }
@@ -568,10 +568,10 @@
     const desktopInvoke = window.__TAURI__?.core?.invoke;
     const isDesktop = typeof desktopInvoke === "function";
     let activeView = "pipeline";
-    let currentJobId = "bytedance";
+    let currentJobId = "sample-applied";
     let currentRoundId = "second";
-    let currentQuestionId = "bq4";
-    let archiveSelection = { jobId: "bytedance", roundId: "first" };
+    let currentQuestionId = "sq4";
+    let archiveSelection = { jobId: "sample-applied", roundId: "first" };
     let addMode = "file";
     let importDrafts = [];
     let searchQuery = "";
@@ -736,7 +736,7 @@
       const cities = [...new Set(available.map(job => job.city).filter(Boolean))];
       const heading = renderPageHeading("看看机会", `${available.length} 个尚未投递的岗位，按公司归组。`, `<button class="button" data-action="open-add" data-mode="url">${icon("link","sm")}从网址录入</button><button class="button primary" data-action="open-add" data-mode="file">${icon("upload","sm")}导入 JD</button>`);
       const rows = filtered.map(job => `<div class="opportunity-row" data-job-id="${escapeHtml(job.id)}"><button class="opportunity-main" data-action="show-job-jd" data-job-id="${escapeHtml(job.id)}" aria-label="查看 ${escapeHtml(job.company)} ${escapeHtml(job.title)} 的岗位 JD"><span class="company-mark ${escapeHtml(job.markTone || job.tone)}">${escapeHtml(job.mark)}</span><span class="opportunity-name"><span class="opportunity-company">${escapeHtml(job.company)} <span class="source-chip">${escapeHtml(job.source)}</span></span><span class="opportunity-title">${escapeHtml(job.title)} · ${escapeHtml(job.city)}</span></span></button><div class="opportunity-date ${job.posted ? "" : "missing"}">${job.posted ? fmtDate(job.posted) : "未提供"}</div><div class="opportunity-date">${fmtDate(job.created)}</div><button class="opportunity-jd-link" data-action="open-job-url" data-job-id="${escapeHtml(job.id)}" title="${escapeHtml(job.sourceUrl || "未记录岗位网址")}">${escapeHtml(shortUrl(job.sourceUrl))}</button><div class="row-actions"><button class="button small" data-action="apply-job" data-job-id="${escapeHtml(job.id)}" title="标记已投递">已投递 ${icon("arrow","sm")}</button><button class="icon-action" data-action="delete-job" data-job-id="${escapeHtml(job.id)}" aria-label="删除 ${escapeHtml(job.company)} ${escapeHtml(job.title)}" title="删除岗位">${icon("trash","sm")}</button></div></div>`).join("");
-      return `${heading}<div class="opportunity-toolbar"><div class="filter-row"><select id="city-filter" class="select-control" aria-label="工作地点筛选"><option value="">全部地点</option>${cities.map(city => `<option value="${escapeHtml(city)}" ${cityFilter === city ? "selected" : ""}>${escapeHtml(city)}</option>`).join("")}</select><select id="opportunity-sort" class="select-control" aria-label="排序">${[["created","最近录入"],["posted","最近发布"],["company","公司名称"]].map(([key,label]) => `<option value="${key}" ${key === opportunitySort ? "selected" : ""}>${label}</option>`).join("")}</select></div><span class="subtle" style="color:var(--muted);font-size:10px">发布时间取官方发布日期；JD 网址可直接打开</span></div><div class="opportunity-table" role="table" aria-label="未投递岗位列表"><div class="table-head" role="row"><span>公司 / 岗位</span><span>发布日期</span><span>录入时间</span><span>JD 网址</span><span></span></div>${rows || `<div class="inline-empty">没有匹配的岗位</div>`}</div>`;
+      return `${heading}<div class="opportunity-toolbar"><div class="filter-row"><select id="city-filter" class="select-control" aria-label="工作地点筛选"><option value="">全部地点</option>${cities.map(city => `<option value="${escapeHtml(city)}" ${cityFilter === city ? "selected" : ""}>${escapeHtml(city)}</option>`).join("")}</select><select id="opportunity-sort" class="select-control" aria-label="排序">${[["created","最近录入"],["posted","最近发布"],["company","公司名称"]].map(([key,label]) => `<option value="${key}" ${key === opportunitySort ? "selected" : ""}>${label}</option>`).join("")}</select></div></div><div class="opportunity-table" role="table" aria-label="未投递岗位列表"><div class="table-head" role="row"><span>公司 / 岗位</span><span title="仅展示 JD 明确提供的官方发布日期">发布日期</span><span>录入时间</span><span>JD 网址</span><span></span></div>${rows || `<div class="inline-empty">没有匹配的岗位</div>`}</div>`;
     }
 
     function renderJobDescription() {
