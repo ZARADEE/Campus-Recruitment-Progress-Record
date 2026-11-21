@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="zh-CN" data-type="software" data-radius="sharp">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f3">
+  <meta name="page-type" content="software">
+  <meta name="site-kind" content="software">
+  <title>求职进度台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ground: #f3f5f2;
+      --paper: #ffffff;
+      --paper-soft: #f8faf7;
+      --ink: #18211e;
+      --muted: #606d68;
+      --faint: #7f8a85;
+      --rule: #dfe5e0;
+      --rule-strong: #cbd4cd;
+      --coral: #d93638;
+      --coral-soft: #fff0ee;
+      --green: #168765;
+      --green-soft: #e9f5ef;
+      --blue: #326e94;
+      --blue-soft: #eaf2f7;
+      --amber: #a86c16;
+      --amber-soft: #fbf3e4;
+      --focus: #326e94;
+      --nav-width: 224px;
+      --list-width: 310px;
+      --control-height: 38px;
+      font-family: "Segoe UI Variable Text", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      color: var(--ink);
+      background: var(--ground);
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--ground); }
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid var(--focus); outline-offset: 2px;
+    }
+    ::selection { color: #13201b; background: #cce9d7; }
+    ::placeholder { color: #69756f; opacity: 1; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd4cd; border: 3px solid var(--ground); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9eaaa2; }
+    .icon { width: 17px; height: 17px; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+    .icon.sm { width: 15px; height: 15px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .app-shell { display: grid; grid-template-columns: var(--nav-width) minmax(0, 1fr); min-height: 100vh; }
+    .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 22px 14px 16px; background: #edf1ed; border-right: 1px solid var(--rule); z-index: 5; }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 3px 9px 27px; }
+    .brand-mark { width: 32px; height: 32px; color: #fff; display: grid; place-items: center; background: #1a6c54; border-radius: 9px 9px 9px 2px; }
+    .brand-mark .icon { width: 19px; height: 19px; stroke-width: 1.9; }
+    .brand-name { font-size: 15px; line-height: 1.2; font-weight: 700; }
+    .brand-caption { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); font-weight: 500; }
+    .nav-label { padding: 0 10px; margin: 8px 0 8px; color: #64716b; font-size: 10px; font-weight: 700; }
+    .nav-stack { display: grid; gap: 3px; }
+    .nav-link { min-height: 40px; width: 100%; border: 0; border-radius: 5px; padding: 0 10px; display: flex; align-items: center; gap: 11px; color: #4e5a55; text-align: left; background: transparent; font-size: 13px; font-weight: 550; }
+    .nav-link:hover { background: #e3e9e3; color: var(--ink); }
+    .nav-link.active { color: #174d3d; background: #dce9df; font-weight: 700; }
+    .nav-link .icon { width: 16px; height: 16px; }
+    .nav-count { margin-left: auto; min-width: 22px; height: 20px; padding: 0 5px; display: grid; place-items: center; border-radius: 3px; background: #e0e6e0; color: #52625a; font-size: 10px; font-variant-numeric: tabular-nums; }
+    .nav-link.active .nav-count { background: #c9dfd0; color: #174d3d; }
+    .main-area { min-width: 0; }
+    .topbar { min-height: 62px; position: sticky; top: 0; z-index: 4; background: rgba(255,255,255,.96); border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 30px; }
+    .crumbs { min-width: 0; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .crumbs strong { overflow: hidden; text-overflow: ellipsis; color: #34423c; font-weight: 650; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .search-wrap { height: 35px; width: 210px; display: flex; align-items: center; gap: 8px; padding: 0 10px; color: #65726c; border: 1px solid var(--rule); border-radius: 4px; background: #fff; }
+    .search-wrap:focus-within { border-color: #92ada0; box-shadow: 0 0 0 2px #e2eee6; }
+    .search-wrap input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; }
+    .button { height: var(--control-height); padding: 0 13px; border: 1px solid var(--rule-strong); border-radius: 4px; background: #fff; color: #26342e; font-size: 12px; font-weight: 650; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; transition: background .14s ease, border-color .14s ease, transform .14s ease; }
+    .button:hover { background: #f6f8f5; border-color: #aab6ad; }
+    .button:active { transform: translateY(1px); }
+    .button.primary { color: #fff; background: #196c53; border-color: #196c53; }
+    .button.primary:hover { background: #145e48; border-color: #145e48; }
+    .button.quiet { border-color: transparent; background: transparent; color: var(--muted); }
+    .button.quiet:hover { background: #eef2ee; color: var(--ink); }
+    .button.small { height: 31px; padding: 0 9px; font-size: 11px; }
+    .button:disabled { cursor: not-allowed; opacity: .5; }
+    .content { width: min(100%, 1580px); margin: 0 auto; padding: 27px 30px 42px; }
+    .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin: 0 0 19px; }
+    .page-heading h1 { margin: 0; font-size: 25px; line-height: 1.2; font-weight: 720; letter-spacing: 0; }
+    .page-subtitle { margin-top: 7px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .heading-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .quick-stats { margin: 0 0 20px; display: flex; align-items: center; gap: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: rgba(255,255,255,.42); }
+    .stat { min-width: 170px; padding: 11px 18px 11px 0; display: flex; align-items: baseline; gap: 9px; }
+    .stat + .stat { padding-left: 20px; border-left: 1px solid var(--rule); }
+    .stat strong { font-size: 18px; font-weight: 730; font-variant-numeric: tabular-nums; }
+    .stat span { color: var(--muted); font-size: 11px; }
+    .stat .coral { color: var(--coral); }
+    .stat .green { color: var(--green); }
+    .workspace { display: grid; grid-template-columns: var(--list-width) minmax(0,1fr); align-items: start; gap: 20px; }
+    .role-list { min-width: 0; background: var(--paper); border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+    .list-head { min-height: 52px; padding: 0 15px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .list-head strong { font-size: 12px; }
+    .list-head span { color: var(--muted); font-size: 10px; }
+    .role-item { position: relative; width: 100%; min-height: 83px; padding: 13px 14px; border: 0; border-bottom: 1px solid #e8ece8; background: #fff; display: grid; grid-template-columns: 34px minmax(0,1fr); align-items: start; gap: 10px; text-align: left; }
+    .role-item:last-child { border-bottom: 0; }
+    .role-item:hover { background: #f8faf7; }
+    .role-item.selected { background: #f0f6f1; box-shadow: inset 3px 0 0 #218062; }
+    .company-mark { width: 31px; height: 31px; border-radius: 7px 7px 7px 2px; display: grid; place-items: center; color: #175f48; background: #ddede2; font-size: 11px; font-weight: 760; flex: 0 0 auto; }
+    .company-mark.blue { color: #285d80; background: #e2eef5; }
+    .company-mark.coral { color: #a93b38; background: #f9e4e0; }
+    .company-mark.amber { color: #8b5b18; background: #f6eddc; }
+    .role-copy { min-width: 0; }
+    .role-company, .role-title, .role-meta { display: block; }
+    .role-company { font-size: 11px; font-weight: 700; }
+    .role-title { margin-top: 4px; color: #3d4a44; font-size: 12px; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .role-meta { display: flex; justify-content: space-between; gap: 6px; margin-top: 8px; color: var(--muted); font-size: 10px; }
+    .role-stage { color: #a43b39; font-weight: 650; white-space: nowrap; }
+    .detail-sheet { min-width: 0; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); }
+    .detail-head { padding: 19px 22px 17px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--rule); }
+    .company-title { min-width: 0; display: flex; align-items: center; gap: 12px; }
+    .company-title .company-mark { width: 39px; height: 39px; font-size: 13px; }
+    .company-name { font-size: 12px; color: #34423b; font-weight: 650; }
+    .job-title { margin-top: 3px; font-size: 19px; font-weight: 720; line-height: 1.3; }
+    .job-inline-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 13px; margin-top: 8px; font-size: 10px; color: var(--muted); }
+    .inline-meta { display: inline-flex; align-items: center; gap: 5px; }
+    .inline-meta .icon { width: 13px; height: 13px; }
+    .badge { min-height: 23px; padding: 0 8px; display: inline-flex; align-items: center; gap: 5px; border-radius: 3px; background: var(--coral-soft); color: #a63835; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .badge.green { color: #14684d; background: var(--green-soft); }
+    .badge.blue { color: #285e81; background: var(--blue-soft); }
+    .detail-tools { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .icon-button { width: 33px; height: 33px; border: 1px solid transparent; border-radius: 4px; color: #5a6961; background: transparent; display: grid; place-items: center; }
+    .icon-button:hover { background: #f1f5f1; border-color: var(--rule); color: var(--ink); }
+    .stage-block { padding: 17px 22px 18px; border-bottom: 1px solid var(--rule); }
+    .section-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .section-line h2 { margin: 0; font-size: 12px; font-weight: 700; }
+    .section-line .subtle { color: var(--muted); font-size: 10px; }
+    .stage-rail { display: flex; align-items: stretch; margin: 18px -4px 0; overflow-x: auto; padding: 0 3px 4px; }
+    .stage-item { flex: 1 0 74px; min-width: 74px; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .stage-item::after { content: ""; position: absolute; z-index: 0; height: 2px; width: calc(100% - 22px); left: calc(50% + 11px); top: 10px; background: #e0e5e1; }
+    .stage-item:last-child::after { display: none; }
+    .stage-item.complete::after { background: var(--coral); }
+    .stage-node { position: relative; z-index: 1; width: 22px; height: 22px; padding: 0; border: 2px solid #d8dfda; border-radius: 50%; background: #fff; color: #8d9992; display: grid; place-items: center; }
+    .stage-node .icon { width: 12px; height: 12px; stroke-width: 2.5; }
+    .stage-item.complete .stage-node { border-color: var(--coral); background: var(--coral); color: #fff; }
+    .stage-item.current .stage-node { border-color: var(--coral); background: var(--coral); box-shadow: 0 0 0 4px #fbe5e3; }
+    .stage-item.current .stage-node::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: white; }
+    .stage-node:hover { border-color: var(--coral); }
+    .stage-label { margin-top: 8px; color: #67736d; font-size: 10px; white-space: nowrap; }
+    .stage-item.complete .stage-label, .stage-item.current .stage-label { color: #a33936; font-weight: 700; }
+    .stage-foot { height: 16px; margin-top: 4px; color: #a33936; font-size: 9px; white-space: nowrap; }
+    .round-block { padding: 16px 22px 18px; border-bottom: 1px solid var(--rule); }
+    .round-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .round-heading h2 { margin: 0; font-size: 12px; font-weight: 700; }
+    .round-heading span { color: var(--muted); font-size: 10px; }
+    .round-controls { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); margin-top: 13px; border: 1px solid var(--rule-strong); border-radius: 4px; overflow: hidden; }
+    .round-button { min-height: 45px; padding: 6px 9px; border: 0; border-right: 1px solid var(--rule); background: #fff; color: #4e5d55; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 11px; font-weight: 650; }
+    .round-button:last-child { border-right: 0; }
+    .round-button:hover { background: #f6f8f6; color: var(--ink); }
+    .round-button.done { color: #176d50; background: #f2f8f4; }
+    .round-button.active { color: #9e302f; background: #fff4f2; box-shadow: inset 0 -2px 0 var(--coral); }
+    .round-dot { width: 8px; height: 8px; border-radius: 50%; background: #d7ded8; }
+    .round-button.done .round-dot { background: var(--green); }
+    .round-button.active .round-dot { background: var(--coral); }
+    .round-note { margin-top: 11px; display: flex; align-items: center; gap: 7px; color: #a33a37; font-size: 10px; }
+    .round-note .icon { width: 14px; height: 14px; }
+    .detail-lower { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(220px,.75fr); }
+    .lower-section { min-width: 0; padding: 17px 22px 20px; }
+    .lower-section + .lower-section { border-left: 1px solid var(--rule); }
+    .lower-title { margin: 0 0 12px; font-size: 11px; font-weight: 700; }
+    .jd-snippet { color: #526058; font-size: 11px; line-height: 1.75; }
+    .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 13px; }
+    .tag { min-height: 22px; padding: 0 7px; display: inline-flex; align-items: center; border: 1px solid #e1e7e2; border-radius: 3px; color: #526159; background: #fafbf9; font-size: 9px; }
+    .activity { display: grid; gap: 11px; }
+    .activity-row { display: grid; grid-template-columns: 11px minmax(0,1fr); gap: 8px; align-items: start; color: #58655f; font-size: 10px; line-height: 1.5; }
+    .activity-bullet { width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: #bcc8bf; }
+    .activity-row:first-child .activity-bullet { background: var(--coral); }
+    .activity-time { display: block; margin-top: 2px; color: #75827a; font-variant-numeric: tabular-nums; }
+    .empty-state { padding: 42px 20px; text-align: center; color: var(--muted); font-size: 12px; }
+    .empty-state strong { display: block; margin-bottom: 6px; color: #34423b; font-size: 13px; }
+    .opportunity-toolbar { margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .filter-row { display: flex; align-items: center; gap: 8px; }
+    .select-control { height: 34px; padding: 0 28px 0 10px; border: 1px solid var(--rule); border-radius: 4px; color: #45534b; background: #fff; font-size: 11px; }
+    .opportunity-table { overflow: hidden; border: 1px solid var(--rule); border-radius: 5px; background: #fff; }
+    .table-head, .opportunity-row { display: grid; grid-template-columns: minmax(230px,1.6fr) minmax(100px,.7fr) minmax(118px,.85fr) minmax(140px,1fr) 128px; align-items: center; gap: 12px; }
+    .table-head { min-height: 39px; padding: 0 17px; background: #f8faf7; border-bottom: 1px solid var(--rule); color: #64716a; font-size: 10px; font-weight: 700; }
+    .opportunity-row { min-height: 75px; padding: 12px 17px; border-bottom: 1px solid #e8ece8; font-size: 11px; }
+    .opportunity-row:last-child { border-bottom: 0; }
+    .opportunity-row:hover { background: #fbfcfa; }
+    .opportunity-main { min-width: 0; padding: 0; border: 0; color: inherit; background: transparent; display: flex; align-items: center; gap: 10px; text-align: left; }
+    .opportunity-name { min-width: 0; }
+    .opportunity-company { color: #35433c; font-size: 11px; font-weight: 700; }
+    .opportunity-title { margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #59665f; font-size: 11px; }
+    .opportunity-date { color: #4e5d55; font-size: 10px; font-variant-numeric: tabular-nums; }
+    .opportunity-date.missing { color: #7c8981; }
+    .opportunity-jd-link { min-width: 0; padding: 0; border: 0; color: #246c53; background: transparent; text-align: left; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .opportunity-jd-link:hover { text-decoration: underline; }
+    .row-actions { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
+    .row-actions .button.small { padding: 0 7px; font-size: 10px; }
+    .icon-action { width: 30px; height: 30px; padding: 0; border: 1px solid var(--rule); border-radius: 3px; color: #8a4540; background: #fff; display: grid; place-items: center; }
+    .icon-action:hover { background: #fbefee; }
+    .job-description { max-width: 1040px; margin: 0 auto; }
+    .job-description-sheet { border: 1px solid var(--rule); border-radius: 5px; background: #fff; }
+    .job-description-header { padding: 22px 25px; border-bottom: 1px solid var(--rule); }
+    .job-description-body { padding: 23px 25px; color: #394840; font-size: 12px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .job-detail-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+    .resume-workspace { display: grid; grid-template-columns: minmax(210px,280px) minmax(0,1fr); border: 1px solid var(--rule); border-radius: 5px; background: #fff; overflow: hidden; }
+    .resume-list { border-right: 1px solid var(--rule); }
+    .resume-list-heading { min-height: 47px; padding: 0 14px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; color: #526058; font-size: 11px; font-weight: 700; }
+    .resume-item { width: 100%; padding: 13px 14px; border: 0; border-bottom: 1px solid #e8ece8; background: #fff; text-align: left; }
+    .resume-item.selected { background: #eff5f0; box-shadow: inset 3px 0 #1a6c54; }
+    .resume-item strong, .resume-item span { display: block; }
+    .resume-item strong { color: #304138; font-size: 11px; }
+    .resume-item span { margin-top: 5px; color: #748178; font-size: 9px; }
+    .resume-editor { min-width: 0; }
+    .resume-editor-head { padding: 14px 17px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .resume-editor-head strong { font-size: 12px; }
+    .resume-meta { padding: 15px 17px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .resume-meta label { display: grid; gap: 5px; color: #647168; font-size: 10px; }
+    .resume-meta input { height: 34px; min-width: 0; padding: 0 9px; border: 1px solid var(--rule-strong); border-radius: 3px; color: var(--ink); font-size: 11px; }
+    .resume-content-editor { width: calc(100% - 34px); min-height: 390px; margin: 14px 17px; padding: 13px; border: 1px solid var(--rule-strong); border-radius: 3px; resize: vertical; color: #28362f; font: 11px/1.8 "Microsoft YaHei", sans-serif; tab-size: 2; }
+    .resume-editor-foot { padding: 0 17px 15px; display: flex; justify-content: space-between; align-items: center; gap: 9px; color: #738078; font-size: 10px; }
+    .resume-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .resume-empty { padding: 45px 24px; }
+    #resume-print-sheet { display: none; }
+    .resume-print-page { max-width: 760px; margin: 0 auto; color: #202a24; font: 10pt/1.55 "Microsoft YaHei", "DengXian", sans-serif; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .resume-print-page h1 { margin: 0 0 8pt; color: #155a43; font-size: 20pt; }
+    .resume-print-page h2 { margin: 13pt 0 5pt; padding-bottom: 3pt; border-bottom: 1px solid #b9c9bf; color: #155a43; font-size: 12pt; }
+    .resume-print-page p { margin: 0 0 3pt; }
+    .source-chip { display: inline-flex; min-height: 20px; align-items: center; padding: 0 6px; border-radius: 3px; color: #285e81; background: var(--blue-soft); font-size: 9px; }
+    .inline-empty { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+    .archive-layout { display: grid; grid-template-columns: 300px minmax(0,1fr); min-height: 520px; border: 1px solid var(--rule); border-radius: 5px; background: #fff; overflow: hidden; }
+    .archive-tree { border-right: 1px solid var(--rule); background: #fbfcfa; padding: 17px 14px; }
+    .tree-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; color: #34423b; font-size: 12px; font-weight: 700; }
+    .tree-section { margin: 13px 0 6px; color: #78847d; font-size: 10px; font-weight: 700; }
+    .tree-company { padding: 7px 6px; display: flex; align-items: center; gap: 7px; color: #334139; font-size: 11px; font-weight: 700; }
+    .tree-company .icon { color: #6d7a72; width: 14px; height: 14px; }
+    .tree-job { width: calc(100% - 10px); margin-left: 10px; min-height: 31px; padding: 4px 8px; border: 0; border-radius: 3px; display: flex; align-items: center; gap: 7px; background: transparent; color: #546159; text-align: left; font-size: 10px; }
+    .tree-job:hover, .tree-job.selected { background: #e9f1eb; color: #174e3c; }
+    .tree-rounds { margin: 2px 0 6px 32px; display: grid; gap: 2px; }
+    .tree-round { width: 100%; min-height: 28px; padding: 4px 7px; border: 0; border-left: 1px solid #dce4de; display: flex; align-items: center; justify-content: space-between; background: transparent; color: #65716a; font-size: 10px; text-align: left; }
+    .tree-round:hover, .tree-round.selected { border-left: 2px solid #168765; color: #175d47; background: #f0f6f1; }
+    .tree-round-count { color: #819087; font-size: 9px; }
+    .archive-content { min-width: 0; padding: 22px 25px; }
+    .archive-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 17px; border-bottom: 1px solid var(--rule); }
+    .archive-title h2 { margin: 0; font-size: 18px; line-height: 1.35; }
+    .archive-title p { margin: 6px 0 0; color: var(--muted); font-size: 10px; }
+    .archive-qa { margin-top: 20px; display: grid; gap: 15px; }
+    .archive-pair { display: grid; grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+    .archive-cell { padding: 12px 14px; min-width: 0; }
+    .archive-cell + .archive-cell { border-left: 1px solid var(--rule); background: #fafbf9; }
+    .archive-label { margin-bottom: 7px; color: #637169; font-size: 9px; font-weight: 700; }
+    .archive-text { white-space: pre-wrap; color: #334139; font-size: 11px; line-height: 1.7; }
+    .editor-meta { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    .editor-meta select, .editor-meta input { height: 32px; padding: 0 9px; border: 1px solid var(--rule); border-radius: 3px; background: #fff; font-size: 10px; }
+    .editor-meta input[type="date"] { min-width: 125px; }
+    .qa-workspace { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); margin-top: 18px; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; background: #fff; }
+    .qa-column { min-width: 0; }
+    .qa-column + .qa-column { border-left: 1px solid var(--rule); }
+    .qa-column-head { min-height: 48px; padding: 0 17px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--rule); background: #f8faf7; }
+    .qa-column-head strong { font-size: 12px; }
+    .qa-column-head span { color: var(--muted); font-size: 10px; }
+    .question-list { padding: 10px 13px 2px; display: flex; gap: 6px; overflow-x: auto; }
+    .question-tab { min-width: 31px; height: 28px; padding: 0 9px; border: 1px solid var(--rule); border-radius: 3px; color: #5d6962; background: #fff; font-size: 10px; }
+    .question-tab:hover { background: #f5f8f5; }
+    .question-tab.selected { border-color: #72a58b; background: #eaf4ed; color: #18563f; font-weight: 700; }
+    .editor-field { padding: 15px 17px 18px; }
+    .field-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; color: #5b685f; font-size: 10px; font-weight: 700; }
+    .editor-area { width: 100%; min-height: 244px; resize: vertical; padding: 12px; border: 1px solid var(--rule); border-radius: 3px; background: #fff; color: #24322b; font-size: 12px; line-height: 1.8; }
+    .editor-area.answer { background: #fcfdfa; }
+    .editor-foot { padding: 10px 17px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--rule); color: #718078; font-size: 9px; }
+    .editor-foot .button { color: #617068; }
+    .save-status { display: inline-flex; align-items: center; gap: 6px; }
+    .save-status .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    .session-summary { width: 100%; min-height: 84px; margin-top: 15px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 3px; resize: vertical; color: #334139; font-size: 11px; line-height: 1.65; }
+    .archive-link { display: inline-flex; align-items: center; gap: 6px; color: #326e94; font-size: 10px; text-decoration: none; }
+    .archive-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+    dialog { width: min(540px, calc(100vw - 28px)); max-height: min(760px, calc(100vh - 36px)); padding: 0; border: 1px solid var(--rule-strong); border-radius: 6px; background: #fff; color: var(--ink); box-shadow: 0 20px 60px rgba(22,38,30,.18); }
+    dialog::backdrop { background: rgba(20,31,25,.36); }
+    .dialog-head { min-height: 56px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--rule); }
+    .dialog-head h2 { margin: 0; font-size: 15px; }
+    .dialog-body { padding: 18px 20px 20px; }
+    .dialog-tabs { display: grid; grid-template-columns: repeat(3,1fr); padding: 3px; margin-bottom: 18px; background: #edf1ed; border-radius: 4px; }
+    .dialog-tab { min-height: 31px; border: 0; border-radius: 3px; color: #5c6961; background: transparent; font-size: 10px; }
+    .dialog-tab.active { color: #1e4938; background: #fff; box-shadow: 0 1px 3px rgba(20,40,28,.12); font-weight: 700; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 12px; }
+    .form-field { min-width: 0; display: grid; gap: 6px; }
+    .form-field.full { grid-column: 1 / -1; }
+    .form-field label { color: #4d5b53; font-size: 10px; font-weight: 700; }
+    .form-field input, .form-field textarea, .form-field select { width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid var(--rule-strong); border-radius: 3px; background: #fff; font-size: 11px; }
+    .form-field textarea { min-height: 92px; resize: vertical; line-height: 1.6; }
+    .form-help { color: #65736b; font-size: 9px; line-height: 1.55; }
+    .file-drop { min-height: 112px; border: 1px dashed #aebbb1; border-radius: 4px; background: #fafcf9; display: grid; place-items: center; text-align: center; padding: 15px; }
+    .file-drop .icon { width: 21px; height: 21px; color: #427d63; margin: 0 auto 7px; }
+    .file-drop strong { display: block; font-size: 11px; }
+    .file-drop span { display: block; margin-top: 4px; color: #66736b; font-size: 9px; }
+    .file-drop input { width: 100%; margin-top: 10px; font-size: 10px; }
+    .prototype-note { padding: 9px 10px; border-left: 2px solid #91a99a; color: #59665f; background: #f4f7f3; font-size: 9px; line-height: 1.55; }
+    .dialog-footer { padding: 13px 20px; border-top: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .dialog-footer .footer-note { color: #69756e; font-size: 9px; }
+    .toast { position: fixed; z-index: 20; right: 24px; bottom: 22px; max-width: min(420px, calc(100vw - 28px)); padding: 11px 14px; border: 1px solid #c8d8ce; border-radius: 4px; color: #194c38; background: #f0f8f2; box-shadow: 0 8px 22px rgba(20,41,29,.1); font-size: 11px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+    .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    @media (max-width: 1180px) {
+      :root { --nav-width: 204px; --list-width: 275px; }
+      .topbar { padding: 0 22px; }
+      .content { padding: 24px 22px 36px; }
+      .table-head, .opportunity-row { grid-template-columns: minmax(180px,1.3fr) minmax(85px,.55fr) minmax(100px,.7fr) minmax(110px,.9fr) 118px; gap: 8px; }
+    }
+    @media (max-width: 900px) {
+      :root { --nav-width: 68px; }
+      .sidebar { align-items: center; padding: 17px 7px 12px; }
+      .brand { padding: 4px 0 24px; }
+      .brand-name, .brand-caption, .nav-label, .nav-link .nav-text, .nav-count { display: none; }
+      .nav-link { width: 48px; height: 44px; padding: 0; justify-content: center; }
+      .nav-link .icon { width: 19px; height: 19px; }
+      .topbar { padding: 0 17px; }
+      .content { padding: 21px 17px 30px; }
+      .workspace { grid-template-columns: minmax(0,1fr); }
+      .role-list { display: grid; grid-template-columns: repeat(3,minmax(180px,1fr)); overflow-x: auto; }
+      .list-head { grid-column: 1 / -1; }
+      .role-item { border-right: 1px solid #e8ece8; border-bottom: 0; }
+      .archive-layout { grid-template-columns: 245px minmax(0,1fr); }
+      .search-wrap { width: 175px; }
+      .resume-workspace { grid-template-columns: 200px minmax(0,1fr); }
+    }
+    @media (max-width: 640px) {
+      :root { --nav-width: 0px; }
+      .app-shell { display: block; padding-bottom: 58px; }
+      .sidebar { position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 58px; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); justify-content: center; padding: 5px 8px; border-top: 1px solid var(--rule); border-right: 0; background: #fff; }
+      .brand { display: none; }
+      .nav-stack { display: contents; }
+      .nav-link { width: 100%; height: 46px; min-height: 46px; flex-direction: column; justify-content: center; gap: 2px; font-size: 9px; }
+      .nav-link .nav-text { display: block; }
+      .nav-link .icon { width: 17px; height: 17px; }
+      .main-area { padding-bottom: 0; }
+      .topbar { min-height: 54px; padding: 0 13px; gap: 8px; }
+      .crumbs { font-size: 10px; }
+      .top-actions { gap: 5px; }
+      .search-wrap { width: 34px; height: 34px; padding: 0 8px; border-color: transparent; background: transparent; }
+      .search-wrap:focus-within { width: min(45vw, 180px); border-color: #92ada0; background: #fff; }
+      .search-wrap input { width: 0; padding: 0; }
+      .search-wrap:focus-within input { width: 100%; }
+      .top-actions .button { height: 33px; padding: 0 9px; font-size: 10px; }
+      .top-actions .button .button-label { display: none; }
+      .content { padding: 18px 12px 24px; }
+      .page-heading { flex-direction: column; align-items: stretch; margin-bottom: 14px; }
+      .page-heading h1 { font-size: 21px; }
+      .page-subtitle { max-width: 60ch; font-size: 10px; }
+      .heading-actions { width: 100%; flex-wrap: wrap; }
+      .heading-actions .button { flex: 1 1 auto; }
+      .heading-actions .button { height: 33px; font-size: 10px; padding: 0 9px; }
+      .quick-stats { margin-bottom: 13px; }
+      .quick-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .stat { min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; flex: 1; padding: 9px 6px 9px 0; gap: 5px; }
+      .stat + .stat { padding-left: 8px; }
+      .stat strong { font-size: 15px; }
+      .stat span { font-size: 8px; line-height: 1.35; }
+      .role-list { grid-template-columns: repeat(3,minmax(150px,1fr)); }
+      .role-item { min-height: 74px; padding: 10px; grid-template-columns: 28px minmax(0,1fr); gap: 7px; }
+      .role-item .company-mark { width: 27px; height: 27px; }
+      .role-meta { margin-top: 5px; }
+      .detail-head { padding: 15px 13px 13px; }
+      .company-title { gap: 8px; }
+      .company-title .company-mark { width: 33px; height: 33px; }
+      .job-title { font-size: 16px; }
+      .job-inline-meta { gap: 6px 9px; font-size: 9px; }
+      .detail-tools .icon-button { width: 28px; height: 30px; }
+      .detail-tools .icon-button:last-child { display: none; }
+      .stage-block { padding: 14px 12px 13px; }
+      .stage-rail { margin-top: 15px; }
+      .stage-item { flex-basis: 65px; min-width: 65px; }
+      .stage-label { font-size: 9px; }
+      .round-block { padding: 14px 12px; }
+      .round-button { min-height: 42px; padding: 4px; font-size: 9px; flex-direction: column; gap: 4px; }
+      .round-dot { width: 6px; height: 6px; }
+      .detail-lower { grid-template-columns: minmax(0,1fr); }
+      .lower-section { padding: 14px 13px; }
+      .lower-section + .lower-section { border-top: 1px solid var(--rule); border-left: 0; }
+      .opportunity-toolbar { align-items: flex-start; flex-direction: column; }
+      .table-head { display: none; }
+      .opportunity-row { grid-template-columns: minmax(0,1fr) auto; gap: 6px 10px; padding: 12px; }
+      .opportunity-main { grid-column: 1 / -1; }
+      .opportunity-row > :nth-child(2), .opportunity-row > :nth-child(3), .opportunity-row > :nth-child(4) { grid-column: 1; padding-left: 39px; }
+      .opportunity-row > :nth-child(2)::before { content: "发布 "; color: #7a867f; }
+      .opportunity-row > :nth-child(3)::before { content: "录入 "; color: #7a867f; }
+      .opportunity-row > :nth-child(4)::before { content: "JD "; color: #7a867f; }
+      .row-actions { grid-column: 2; grid-row: 2 / span 3; align-self: center; }
+      .archive-layout { display: block; }
+      .resume-workspace { display: block; }
+      .resume-list { border-right: 0; border-bottom: 1px solid var(--rule); max-height: 195px; overflow-y: auto; }
+      .resume-content-editor { min-height: 300px; }
+      .archive-tree { border-right: 0; border-bottom: 1px solid var(--rule); max-height: 235px; overflow: auto; }
+      .archive-content { padding: 17px 13px; }
+      .archive-pair { grid-template-columns: minmax(0,1fr); }
+      .archive-cell + .archive-cell { border-top: 1px solid var(--rule); border-left: 0; }
+      .qa-workspace { grid-template-columns: minmax(0,1fr); }
+      .qa-column + .qa-column { border-top: 1px solid var(--rule); border-left: 0; }
+      .editor-area { min-height: 180px; }
+      .editor-meta { width: 100%; }
+      .editor-meta select { flex: 1; }
+      .editor-meta input { flex: 1; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-field.full { grid-column: auto; }
+      .dialog-body { padding: 15px 14px; }
+      .dialog-head, .dialog-footer { padding-left: 14px; padding-right: 14px; }
+      .toast { right: 12px; bottom: 70px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+    @media print {
+      body.print-resume { min-width: 0; background: #fff; }
+      body.print-resume .app-shell, body.print-resume #add-dialog, body.print-resume #toast { display: none !important; }
+      body.print-resume #resume-print-sheet { display: block !important; padding: 0; }
+      body.print-resume .resume-print-page { max-width: none; padding: 0; }
+      @page { size: A4; margin: 16mm 17mm; }
+    }
+  </style>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="sr-only" aria-hidden="true" focusable="false">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18m-12 0v2m6-2v2"/></symbol>
+    <symbol id="i-steps" viewBox="0 0 24 24"><path d="M4 5h5v5H4zM15 14h5v5h-5zM9 7h4a3 3 0 0 1 3 3v4M12 17h3"/><path d="m13 15 2 2-2 2"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22zM4 5.5v14A2.5 2.5 0 0 1 6.5 17H20"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6M9 12h12"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-location" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h9"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></symbol>
+  </svg>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">
+        <div class="brand-mark"><svg class="icon"><use href="#i-steps"/></svg></div>
+        <div class="brand-name">求职进度台<span class="brand-caption">CAMPUS · 2027</span></div>
+      </div>
+      <div class="nav-label">招聘进度</div>
+      <nav class="nav-stack">
+        <button class="nav-link" data-view="opportunities" aria-label="看看机会"><svg class="icon"><use href="#i-briefcase"/></svg><span class="nav-text">看看机会</span><span class="nav-count" id="opportunity-count">3</span></button>
+        <button class="nav-link active" data-view="pipeline" aria-current="page" aria-label="正在推进"><svg class="icon"><use href="#i-steps"/></svg><span class="nav-text">正在推进</span><span class="nav-count" id="pipeline-count">2</span></button>
+      </nav>
+      <div class="nav-label" style="margin-top:25px">复盘资料</div>
+      <nav class="nav-stack">
+        <button class="nav-link" data-view="archive" aria-label="面试记录"><svg class="icon"><use href="#i-book"/></svg><span class="nav-text">面试记录</span><span class="nav-count" id="archive-count">6</span></button>
+        <button class="nav-link" data-view="resumes" aria-label="个人简历"><svg class="icon"><use href="#i-file"/></svg><span class="nav-text">个人简历</span><span class="nav-count" id="resume-count">0</span></button>
+      </nav>
+    </aside>
+    <main class="main-area">
+      <header class="topbar">
+        <div class="crumbs"><strong id="crumb-current">正在推进</strong></div>
+        <div class="top-actions">
+          <label class="search-wrap" aria-label="搜索公司或岗位"><svg class="icon sm"><use href="#i-search"/></svg><input id="global-search" type="search" placeholder="搜索公司或岗位" autocomplete="off"></label>
+          <button class="button primary" data-action="open-add"><svg class="icon sm"><use href="#i-plus"/></svg><span class="button-label">添加岗位</span></button>
+        </div>
+      </header>
+      <div id="main-content" class="content"></div>
+    </main>
+  </div>
+  <div id="resume-print-sheet" aria-hidden="true"></div>
+
+  <dialog id="add-dialog" aria-labelledby="add-title">
+    <div class="dialog-head"><h2 id="add-title">录入岗位</h2><button class="icon-button" data-action="close-dialog" aria-label="关闭"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <div class="dialog-body">
+      <div class="dialog-tabs" role="tablist" aria-label="岗位录入方式">
+        <button class="dialog-tab active" role="tab" aria-selected="true" data-mode="file">文件导入</button>
+        <button class="dialog-tab" role="tab" aria-selected="false" data-mode="url">招聘网址</button>
+        <button class="dialog-tab" role="tab" aria-selected="false" data-mode="manual">手动录入</button>
+      </div>
+      <div data-mode-panel="file">
+        <div class="file-drop" id="file-drop">
+          <svg class="icon"><use href="#i-upload"/></svg>
+          <strong id="file-label">选择岗位 JD 文件</strong>
+          <span>支持 Markdown、Word 和 CSV（.md、.docx、.csv）</span>
+          <label class="button small" for="job-file" id="browser-file-picker">浏览文件</label>
+          <button class="button small" id="native-file-picker" data-action="pick-file" style="display:none">从本机选择文件</button>
+          <input id="job-file" type="file" accept=".md,.docx,.csv" hidden>
+        </div>
+        <div id="file-note" class="prototype-note" style="margin-top:11px">浏览器预览可读取 Markdown；Word、CSV 与本地数据保存请使用桌面版。</div>
+        <div id="batch-preview" hidden style="margin-top:15px"></div>
+        <div id="file-fields" class="form-grid" style="margin-top:15px">
+          <div class="form-field"><label for="file-company">公司</label><input id="file-company" placeholder="例如：字节跳动"></div>
+          <div class="form-field"><label for="file-title">岗位名称</label><input id="file-title" placeholder="例如：前端开发工程师"></div>
+          <div class="form-field"><label for="file-published">发布时间</label><input id="file-published" type="date"></div>
+          <div class="form-field"><label for="file-city">工作地点</label><input id="file-city" placeholder="例如：上海"></div>
+          <div class="form-field full"><label for="file-jd">岗位描述</label><textarea id="file-jd" placeholder="文件解析后可在这里检查并编辑 JD"></textarea></div>
+        </div>
+      </div>
+      <div data-mode-panel="url" hidden>
+        <div class="form-grid">
+          <div class="form-field full"><label for="job-url">招聘网址</label><div style="display:flex;gap:8px"><input id="job-url" type="url" placeholder="https://careers.example.com/job/123" autocomplete="url"><button class="button small" data-action="preview-url" style="flex:0 0 auto">抓取预览</button></div><span class="form-help">粘贴公开招聘页面网址。登录后可见或脚本渲染的页面可能需要手动补充 JD。</span></div>
+          <div class="form-field"><label for="url-company">公司</label><input id="url-company" placeholder="抓取后确认公司名称"></div>
+          <div class="form-field"><label for="url-title">岗位名称</label><input id="url-title" placeholder="抓取后确认岗位名称"></div>
+          <div class="form-field"><label for="url-published">发布时间</label><input id="url-published" type="date"></div>
+          <div class="form-field"><label for="url-city">工作地点</label><input id="url-city" placeholder="可留空"></div>
+          <div class="form-field full"><label for="url-jd">岗位描述</label><textarea id="url-jd" placeholder="抓取结果会在这里供你检查和编辑"></textarea></div>
+        </div>
+        <div class="prototype-note" id="url-note" style="margin-top:12px">公开网页只会在你点按“抓取预览”后请求；抓取结果可修改，确认后才会保存。</div>
+      </div>
+      <div data-mode-panel="manual" hidden>
+        <div class="form-grid">
+          <div class="form-field"><label for="manual-company">公司 *</label><input id="manual-company" required placeholder="公司名称"></div>
+          <div class="form-field"><label for="manual-title">岗位名称 *</label><input id="manual-title" required placeholder="岗位名称"></div>
+          <div class="form-field"><label for="manual-published">发布时间</label><input id="manual-published" type="date"></div>
+          <div class="form-field"><label for="manual-city">工作地点</label><input id="manual-city" placeholder="例如：北京"></div>
+          <div class="form-field full"><label for="manual-jd">岗位描述</label><textarea id="manual-jd" placeholder="粘贴 JD，或记录岗位要求"></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer"><span class="footer-note">未投递岗位将加入「看看机会」</span><div style="display:flex;gap:8px"><button class="button" data-action="close-dialog">取消</button><button class="button primary" data-action="save-job"><svg class="icon sm"><use href="#i-save"/></svg>保存岗位</button></div></div>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const stageNames = ["投递", "测评", "笔试", "AI面试", "简历筛选", "面试", "Offer", "入职"];
+    const rounds = [
+      { id: "first", label: "一面" },
+      { id: "second", label: "二面" },
+      { id: "third", label: "三面" },
+      { id: "hr", label: "HR 面" }
+    ];
+    let jobs = [
+      {
+        id: "bytedance", company: "字节跳动", mark: "字", markTone: "coral", title: "前端开发工程师", city: "上海", team: "商业化产品", status: "applied", stageIndex: 5, activeRound: "second", posted: "2026-10-06", created: "2026-10-12", appliedAt: "2026-10-19", updated: "今天 10:42", source: "官网", salary: "面议", tags: ["React", "TypeScript", "B 端产品"],
+        jd: "负责商业化产品的 Web 端研发与体验迭代；参与前端工程建设，和产品、设计及服务端协作交付核心功能。", activity: ["完成二面笔试题复盘", "进入二面流程", "已完成在线测评"], sessions: {
+          first: { date: "2026-11-14", result: "通过", summary: "重点讨论项目拆解、React 渲染机制和跨团队协作。", questions: [
+            { id: "bq1", question: "介绍一个你负责的前端项目。你如何拆分模块并推进交付？", answer: "先说明业务目标和约束，再按页面、状态与数据边界拆模块。项目里我把筛选区、结果表格和详情抽屉拆成独立模块，共用查询参数和请求状态。联调阶段用固定接口契约减少前后端等待。" },
+            { id: "bq2", question: "React 中 useMemo 和 useCallback 分别解决什么问题？", answer: "两者用于缓存渲染期间的计算结果和函数引用，是否使用要看依赖变化与子组件是否做了引用比较。它们有维护成本，不应默认套在每个值上。" },
+            { id: "bq3", question: "页面请求失败时，如何设计错误恢复？", answer: "区分可重试的网络错误和不可恢复的业务错误，保留用户已输入条件，提供就地重试并记录请求标识。涉及局部刷新时避免整个页面清空。" }
+          ] },
+          second: { date: "2026-11-21", result: "进行中", summary: "", questions: [
+            { id: "bq4", question: "设计一个支持百万级数据的前端列表，需要考虑哪些方面？", answer: "" },
+            { id: "bq5", question: "项目中如何处理请求竞态和过期响应？", answer: "" }
+          ] },
+          third: { date: "", result: "待安排", summary: "", questions: [] },
+          hr: { date: "", result: "待安排", summary: "", questions: [] }
+        }
+      },
+      {
+        id: "netease", company: "网易", mark: "网", markTone: "blue", title: "前端研发工程师", city: "杭州", team: "游戏事业部", status: "applied", stageIndex: 5, activeRound: "first", posted: "2026-09-28", created: "2026-10-08", appliedAt: "2026-10-22", updated: "昨天 16:20", source: "官网", salary: "面议", tags: ["Vue", "可视化", "游戏工具"],
+        jd: "参与游戏研发工具与运营平台建设，负责复杂交互和数据可视化体验，持续优化稳定性与开发效率。", activity: ["收到一面邀约", "投递简历", "录入岗位信息"], sessions: {
+          first: { date: "2026-11-20", result: "进行中", summary: "", questions: [{ id: "nq1", question: "请讲讲你处理过的一个性能问题，以及如何定位瓶颈。", answer: "" }] },
+          second: { date: "", result: "待安排", summary: "", questions: [] }, third: { date: "", result: "待安排", summary: "", questions: [] }, hr: { date: "", result: "待安排", summary: "", questions: [] }
+        }
+      }
+    ];
+    let opportunities = [
+      { id: "rednote", company: "小红书", mark: "红", tone: "coral", title: "AI 产品前端工程师", city: "上海", posted: "2026-11-18", created: "2026-11-20", source: "招聘官网", salary: "面议", jd: "参与 AI 创作工具与内容社区的前端体验建设，关注复杂交互、性能和可访问性。", tags: ["React", "AI 应用", "内容平台"] },
+      { id: "tencent", company: "腾讯", mark: "腾", tone: "blue", title: "前端开发工程师（WXG）", city: "深圳", posted: null, created: "2026-11-19", source: "Markdown", salary: "面议", jd: "参与微信相关 Web 产品研发，和产品及设计协作完成用户体验与基础能力迭代。", tags: ["TypeScript", "工程化", "跨端"] },
+      { id: "alibaba", company: "阿里云", mark: "云", tone: "amber", title: "前端研发工程师", city: "杭州", posted: "2026-11-15", created: "2026-11-20", source: "招聘官网", salary: "面议", jd: "负责云产品控制台及开发者工具的前端实现，提升复杂业务场景下的操作效率。", tags: ["Vue", "设计系统", "云计算"] }
+    ];
+    let resumes = [];
+    const desktopInvoke = window.__TAURI__?.core?.invoke;
+    const isDesktop = typeof desktopInvoke === "function";
+    let activeView = "pipeline";
+    let currentJobId = "bytedance";
+    let currentRoundId = "second";
+    let currentQuestionId = "bq4";
+    let archiveSelection = { jobId: "bytedance", roundId: "first" };
+    let addMode = "file";
+    let importDrafts = [];
+    let searchQuery = "";
+    let cityFilter = "";
+    let opportunitySort = "created";
+    let selectedResumeId = null;
+    let jobDetailId = null;
+    let jobDetailReturnView = "opportunities";
+    let toastTimer;
+    let resumeSaveTimer;
+
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+    const icon = (name, extra = "") => `<svg class="icon ${extra}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+    const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    const fmtDate = value => value ? value.replaceAll("-", ".") : "未提供";
+    const getJob = id => jobs.find(job => job.id === id);
+    const getAnyJob = id => getJob(id) || opportunities.find(job => job.id === id);
+    const shortUrl = value => { try { const url = new URL(value); return `${url.hostname}${url.pathname === "/" ? "" : url.pathname}`; } catch { return value || "未提供"; } };
+    const getSession = (job, roundId) => job.sessions[roundId] || (job.sessions[roundId] = { date: "", result: "待安排", summary: "", questions: [] });
+    const stageLabel = job => job.stageIndex === 5 ? `${rounds.find(round => round.id === job.activeRound)?.label || "一面"}中` : job.stageIndex === 7 ? "已入职" : job.stageIndex === 6 ? "Offer" : `${stageNames[job.stageIndex]}中`;
+    const matchesSearch = job => `${job.company} ${job.title} ${job.city} ${job.jd}`.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase());
+    const draftKey = (jobId, roundId) => `campus-draft:${jobId}:${roundId}`;
+    function restoreDrafts() {
+      if (!isDesktop) return;
+      for (const job of jobs) for (const round of rounds) {
+        try {
+          const raw = localStorage.getItem(draftKey(job.id, round.id));
+          if (raw) {
+            const draft = JSON.parse(raw);
+            if (Array.isArray(draft.questions)) job.sessions[round.id] = draft;
+          }
+        } catch { /* An invalid draft does not replace the saved record. */ }
+      }
+    }
+    function weekInterviews() {
+      const start = new Date(); start.setHours(0,0,0,0); start.setDate(start.getDate() - (start.getDay() + 6) % 7);
+      const end = new Date(start); end.setDate(start.getDate() + 7);
+      return jobs.reduce((count, job) => count + Object.values(job.sessions).filter(session => { const date = new Date(`${session.date}T00:00:00`); return date >= start && date < end; }).length, 0);
+    }
+
+    async function refreshNativeData() {
+      const records = await desktopInvoke("list_jobs");
+      jobs = records.filter(job => job.status === "applied");
+      opportunities = records.filter(job => job.status === "opportunity");
+      resumes = await desktopInvoke("list_resumes");
+      if (!resumes.some(resume => resume.id === selectedResumeId)) selectedResumeId = resumes[0]?.id || null;
+      restoreDrafts();
+      if (!getJob(currentJobId)) currentJobId = jobs[0]?.id || null;
+      if (!getJob(archiveSelection.jobId)) {
+        const firstWithSessions = jobs.find(job => Object.values(job.sessions).some(session => session.questions.length));
+        archiveSelection = { jobId: firstWithSessions?.id || null, roundId: "first" };
+      }
+      render();
+    }
+
+    async function initializeDesktop() {
+      if (!isDesktop) return;
+      jobs = [];
+      opportunities = [];
+      currentJobId = null;
+      $("#browser-file-picker").hidden = true;
+      $("#native-file-picker").style.display = "inline-flex";
+      $("#file-note").textContent = "Markdown、Word 与 CSV 会在本机解析，检查字段后保存。CSV 支持一行一个岗位。";
+      try {
+        await refreshNativeData();
+      } catch (error) {
+        showToast(`无法读取本地数据库：${String(error)}`);
+      }
+    }
+
+    function showToast(message) {
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 2600);
+    }
+
+    function setView(view) {
+      if (activeView === "interview") saveCurrentQuestion();
+      if (activeView === "resumes") {
+        clearTimeout(resumeSaveTimer);
+        persistResumeEditor(false);
+      }
+      activeView = view;
+      $$(".nav-link").forEach(button => {
+        const isActive = button.dataset.view === view || (view === "interview" && button.dataset.view === "pipeline") || (view === "job-detail" && button.dataset.view === "opportunities");
+        button.classList.toggle("active", isActive);
+        if (isActive) button.setAttribute("aria-current", "page"); else button.removeAttribute("aria-current");
+      });
+      const labels = { pipeline: "正在推进", opportunities: "看看机会", archive: "面试记录", interview: "面试复盘", resumes: "个人简历", "job-detail": "岗位 JD" };
+      $("#crumb-current").textContent = labels[view] || "正在推进";
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function render() {
+      $("#opportunity-count").textContent = opportunities.length;
+      $("#pipeline-count").textContent = jobs.filter(job => job.status === "applied").length;
+      const sessionCount = jobs.reduce((sum, job) => sum + Object.values(job.sessions).filter(session => session.questions.length > 0).length, 0);
+      $("#archive-count").textContent = sessionCount;
+      $("#resume-count").textContent = resumes.length;
+      const main = $("#main-content");
+      if (activeView === "pipeline") main.innerHTML = renderPipeline();
+      if (activeView === "opportunities") main.innerHTML = renderOpportunities();
+      if (activeView === "archive") main.innerHTML = renderArchive();
+      if (activeView === "interview") main.innerHTML = renderInterviewEditor();
+      if (activeView === "resumes") main.innerHTML = renderResumes();
+      if (activeView === "job-detail") main.innerHTML = renderJobDescription();
+    }
+
+    function renderPageHeading(title, subtitle, actions = "") {
+      return `<div class="page-heading"><div><h1>${title}</h1><div class="page-subtitle">${subtitle}</div></div>${actions ? `<div class="heading-actions">${actions}</div>` : ""}</div>`;
+    }
+
+    function renderPipeline() {
+      const activeJobs = jobs.filter(job => job.status === "applied" && matchesSearch(job)).sort((a,b) => a.company.localeCompare(b.company, "zh-CN") || (b.updated || "").localeCompare(a.updated || ""));
+      const selected = activeJobs.find(job => job.id === currentJobId) || activeJobs[0];
+      if (selected) currentJobId = selected.id;
+      if (!selected) return `${renderPageHeading("正在推进", "当前没有已投递的岗位。") }<div class="empty-state"><strong>还没有正在推进的岗位</strong>从「看看机会」中把已投递岗位移入这里。</div>`;
+      const heading = renderPageHeading("正在推进", `跟进 ${activeJobs.length} 个已投递岗位，按最近一次进展整理。`, `<button class="button" data-action="open-add" data-mode="url">${icon("link","sm")}从网址录入</button><button class="button primary" data-action="open-add" data-mode="file">${icon("plus","sm")}添加岗位</button>`);
+      const list = activeJobs.length ? activeJobs.map(job => `
+        <button class="role-item ${job.id === selected.id ? "selected" : ""}" data-action="select-job" data-job-id="${escapeHtml(job.id)}" aria-pressed="${job.id === selected.id}">
+          <span class="company-mark ${escapeHtml(job.markTone)}">${escapeHtml(job.mark)}</span>
+          <span class="role-copy"><span class="role-company">${escapeHtml(job.company)}</span><span class="role-title">${escapeHtml(job.title)}</span><span class="role-meta"><span>${escapeHtml(job.updated)}</span><span class="role-stage">${escapeHtml(stageLabel(job))}</span></span></span>
+        </button>`).join("") : `<div class="empty-state">暂无岗位</div>`;
+      const stageItems = stageNames.map((name, index) => {
+        const state = index < selected.stageIndex ? "complete" : index === selected.stageIndex ? "current" : "";
+        const node = index < selected.stageIndex ? icon("check") : "";
+        return `<div class="stage-item ${state}"><button class="stage-node" data-action="set-stage" data-stage="${index}" aria-label="${escapeHtml(name)}：${index < selected.stageIndex ? "已完成" : index === selected.stageIndex ? "当前阶段" : "未开始"}">${node}</button><span class="stage-label">${escapeHtml(name)}</span><span class="stage-foot">${index === selected.stageIndex ? `${escapeHtml(stageLabel(selected))}` : ""}</span></div>`;
+      }).join("");
+      const roundButtons = rounds.map(round => {
+        const session = getSession(selected, round.id);
+        const complete = session.questions.length > 0 && session.result !== "进行中";
+        const active = round.id === selected.activeRound;
+        return `<button class="round-button ${complete ? "done" : ""} ${active ? "active" : ""}" data-action="open-interview" data-round="${round.id}" aria-label="打开${round.label}记录"><span class="round-dot"></span><span>${round.label}</span></button>`;
+      }).join("");
+      const activity = selected.activity.map((item, index) => `<div class="activity-row"><span class="activity-bullet"></span><span>${escapeHtml(item)}<span class="activity-time">${isDesktop ? "" : index === 0 ? escapeHtml(selected.updated) : ""}</span></span></div>`).join("");
+      const tags = selected.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
+      return `${heading}
+        <div class="quick-stats" aria-label="进度概览"><div class="stat"><strong class="coral">${activeJobs.length}</strong><span>推进中岗位</span></div><div class="stat"><strong>${weekInterviews()}</strong><span>本周面试</span></div><div class="stat"><strong class="green">${jobs.reduce((count, job) => count + Object.values(job.sessions).filter(session => session.questions.length).length,0)}</strong><span>已归档轮次</span></div></div>
+        <div class="workspace">
+          <section class="role-list" aria-label="已投递岗位"><div class="list-head"><strong>已投递岗位</strong><span>${activeJobs.length} 个岗位</span></div>${list}</section>
+          <section class="detail-sheet" aria-label="岗位流程详情">
+            <div class="detail-head"><div class="company-title"><span class="company-mark ${escapeHtml(selected.markTone)}">${escapeHtml(selected.mark)}</span><div><div class="company-name">${escapeHtml(selected.company)} · ${escapeHtml(selected.team)}</div><div class="job-title">${escapeHtml(selected.title)}</div><div class="job-inline-meta"><span class="inline-meta">${icon("location")} ${escapeHtml(selected.city)}</span><span class="inline-meta">${icon("calendar")} 投递于 ${fmtDate(selected.appliedAt)}</span><span class="badge">${escapeHtml(stageLabel(selected))}</span></div><div class="job-detail-tools"><button class="button small" data-action="show-job-jd" data-job-id="${escapeHtml(selected.id)}">查看岗位 JD ${icon("arrow","sm")}</button></div></div></div><div class="detail-tools"><button class="icon-action" data-action="delete-job" data-job-id="${escapeHtml(selected.id)}" aria-label="删除岗位" title="删除岗位">${icon("trash","sm")}</button><button class="icon-button" data-action="open-add" aria-label="新增岗位">${icon("more")}</button></div></div>
+            <div class="stage-block"><div class="section-line"><h2>招聘进度</h2><span class="subtle">最近更新 · ${escapeHtml(selected.updated)}</span></div><div class="stage-rail" role="group" aria-label="招聘流程阶段">${stageItems}</div></div>
+            <div class="round-block"><div class="round-heading"><h2>面试轮次</h2><span>选择节点，记录本轮题目与回答</span></div><div class="round-controls" role="group" aria-label="面试轮次">${roundButtons}</div><div class="round-note">${icon("clock")} 当前进度：${escapeHtml(stageLabel(selected))}</div></div>
+            <div class="detail-lower"><section class="lower-section"><h3 class="lower-title">岗位摘要</h3><div class="jd-snippet">${escapeHtml(selected.jd)}</div><div class="tag-row">${tags}</div></section><section class="lower-section"><h3 class="lower-title">最近动态</h3><div class="activity">${activity}</div></section></div>
+          </section>
+        </div>`;
+    }
+
+    function renderOpportunities() {
+      const available = opportunities;
+      const filtered = available.filter(job => matchesSearch(job) && (!cityFilter || job.city === cityFilter)).sort((a,b) => {
+        const companyOrder = a.company.localeCompare(b.company, "zh-CN");
+        if (companyOrder) return companyOrder;
+        if (opportunitySort === "company") return a.title.localeCompare(b.title, "zh-CN");
+        return (b[opportunitySort] || "").localeCompare(a[opportunitySort] || "") || a.title.localeCompare(b.title, "zh-CN");
+      });
+      const cities = [...new Set(available.map(job => job.city).filter(Boolean))];
+      const heading = renderPageHeading("看看机会", `${available.length} 个尚未投递的岗位，按公司归组。`, `<button class="button" data-action="open-add" data-mode="url">${icon("link","sm")}从网址录入</button><button class="button primary" data-action="open-add" data-mode="file">${icon("upload","sm")}导入 JD</button>`);
+      const rows = filtered.map(job => `<div class="opportunity-row" data-job-id="${escapeHtml(job.id)}"><button class="opportunity-main" data-action="show-job-jd" data-job-id="${escapeHtml(job.id)}" aria-label="查看 ${escapeHtml(job.company)} ${escapeHtml(job.title)} 的岗位 JD"><span class="company-mark ${escapeHtml(job.markTone || job.tone)}">${escapeHtml(job.mark)}</span><span class="opportunity-name"><span class="opportunity-company">${escapeHtml(job.company)} <span class="source-chip">${escapeHtml(job.source)}</span></span><span class="opportunity-title">${escapeHtml(job.title)} · ${escapeHtml(job.city)}</span></span></button><div class="opportunity-date ${job.posted ? "" : "missing"}">${job.posted ? fmtDate(job.posted) : "未提供"}</div><div class="opportunity-date">${fmtDate(job.created)}</div><button class="opportunity-jd-link" data-action="open-job-url" data-job-id="${escapeHtml(job.id)}" title="${escapeHtml(job.sourceUrl || "未记录岗位网址")}">${escapeHtml(shortUrl(job.sourceUrl))}</button><div class="row-actions"><button class="button small" data-action="apply-job" data-job-id="${escapeHtml(job.id)}" title="标记已投递">已投递 ${icon("arrow","sm")}</button><button class="icon-action" data-action="delete-job" data-job-id="${escapeHtml(job.id)}" aria-label="删除 ${escapeHtml(job.company)} ${escapeHtml(job.title)}" title="删除岗位">${icon("trash","sm")}</button></div></div>`).join("");
+      return `${heading}<div class="opportunity-toolbar"><div class="filter-row"><select id="city-filter" class="select-control" aria-label="工作地点筛选"><option value="">全部地点</option>${cities.map(city => `<option value="${escapeHtml(city)}" ${cityFilter === city ? "selected" : ""}>${escapeHtml(city)}</option>`).join("")}</select><select id="opportunity-sort" class="select-control" aria-label="排序">${[["created","最近录入"],["posted","最近发布"],["company","公司名称"]].map(([key,label]) => `<option value="${key}" ${key === opportunitySort ? "selected" : ""}>${label}</option>`).join("")}</select></div><span class="subtle" style="color:var(--muted);font-size:10px">发布时间取官方发布日期；JD 网址可直接打开</span></div><div class="opportunity-table" role="table" aria-label="未投递岗位列表"><div class="table-head" role="row"><span>公司 / 岗位</span><span>发布日期</span><span>录入时间</span><span>JD 网址</span><span></span></div>${rows || `<div class="inline-empty">没有匹配的岗位</div>`}</div>`;
+    }
+
+    function renderJobDescription() {
+      const job = getAnyJob(jobDetailId);
+      if (!job) return `${renderPageHeading("岗位 JD", "") }<div class="empty-state">岗位记录不存在。</div>`;
+      const heading = renderPageHeading("岗位 JD", "岗位资料与原始招聘信息", `<button class="button" data-action="back-to-job-list">${icon("back","sm")}返回列表</button>`);
+      const urlButton = job.sourceUrl ? `<button class="button primary" data-action="open-job-url" data-job-id="${escapeHtml(job.id)}">${icon("link","sm")}打开官方 JD</button>` : "";
+      return `<div class="job-description">${heading}<article class="job-description-sheet"><header class="job-description-header"><div class="company-title"><span class="company-mark ${escapeHtml(job.markTone || job.tone)}">${escapeHtml(job.mark)}</span><div><div class="company-name">${escapeHtml(job.company)}</div><h1 class="job-title">${escapeHtml(job.title)}</h1><div class="job-inline-meta"><span class="inline-meta">${icon("location")} ${escapeHtml(job.city || "地点未注明")}</span><span class="inline-meta">${icon("calendar")} 发布于 ${fmtDate(job.posted)}</span><span class="inline-meta">录入于 ${fmtDate(job.created)}</span></div></div></div><div class="job-detail-tools">${urlButton}<button class="button small" data-action="delete-job" data-job-id="${escapeHtml(job.id)}">${icon("trash","sm")}删除岗位</button></div></header><div class="job-description-body">${escapeHtml(job.jd || "该岗位没有保存 JD 正文。可通过下方网址查看招聘页面。")}</div></article></div>`;
+    }
+
+    function renderResumes() {
+      const selected = resumes.find(resume => resume.id === selectedResumeId) || resumes[0];
+      if (selected) selectedResumeId = selected.id;
+      const heading = renderPageHeading("个人简历", "编辑本机简历内容并导出文件。", `<button class="button primary" data-action="import-resume">${icon("upload","sm")}导入 Word 简历</button>`);
+      if (!selected) return `${heading}<section class="detail-sheet resume-empty"><div class="empty-state"><strong>还没有简历</strong>导入 .docx 文件后即可编辑并导出 Word 或 PDF。</div></section>`;
+      const list = resumes.map(resume => `<button class="resume-item ${resume.id === selected.id ? "selected" : ""}" data-action="select-resume" data-resume-id="${escapeHtml(resume.id)}"><strong>${escapeHtml(resume.name)}</strong><span>${escapeHtml(resume.targetRole)} · 已保存</span></button>`).join("");
+      return `${heading}<section class="resume-workspace"><aside class="resume-list"><div class="resume-list-heading"><span>简历列表</span><span>${resumes.length}</span></div>${list}</aside><section class="resume-editor"><div class="resume-editor-head"><strong>${escapeHtml(selected.name)}</strong><div class="resume-actions"><button class="button small" data-action="export-resume-word" data-resume-id="${escapeHtml(selected.id)}">${icon("download","sm")}导出 Word</button><button class="button small" data-action="export-resume-pdf" data-resume-id="${escapeHtml(selected.id)}">${icon("file","sm")}导出 PDF</button><button class="button primary small" data-action="save-resume" data-resume-id="${escapeHtml(selected.id)}">${icon("save","sm")}保存修改</button></div></div><div class="resume-meta"><label>简历名称<input id="resume-name" value="${escapeHtml(selected.name)}"></label><label>目标岗位<input id="resume-target-role" value="${escapeHtml(selected.targetRole)}"></label></div><textarea id="resume-content" class="resume-content-editor" spellcheck="false" aria-label="简历内容">${escapeHtml(selected.content)}</textarea><div class="resume-editor-foot"><span>原始文件：${escapeHtml(selected.originalFile)}</span><span>上次保存 ${escapeHtml(fmtDate((selected.updatedAt || "").slice(0,10)))}</span></div></section></section>`;
+    }
+
+    function resumePrintHtml(resume, content) {
+      const sections = new Set(["教育背景", "核心技能", "技能清单", "实习与项目经历", "项目经历", "工作经历", "实习经历", "荣誉奖项", "个人总结"]);
+      return `<article class="resume-print-page"><h1>${escapeHtml(content.split(/\r?\n/,1)[0] || resume.name)}</h1>${content.split(/\r?\n/).slice(1).map(line => sections.has(line.trim()) ? `<h2>${escapeHtml(line)}</h2>` : `<p>${escapeHtml(line) || "&nbsp;"}</p>`).join("")}</article>`;
+    }
+
+    function getArchiveSessions() {
+      return jobs.flatMap(job => rounds.flatMap(round => {
+        const session = getSession(job, round.id);
+        return session.questions.length ? [{ job, round, session }] : [];
+      }));
+    }
+
+    function renderArchive() {
+      const sessions = getArchiveSessions().filter(item => matchesSearch(item.job));
+      const heading = renderPageHeading("面试记录", "按公司、岗位和轮次整理的复盘档案。", `<button class="button" data-action="new-interview">${icon("plus","sm")}新建复盘</button>`);
+      if (!sessions.length) return `${heading}<div class="detail-sheet"><div class="empty-state"><strong>还没有面试复盘</strong>投递岗位后，点击正在推进中的一面、二面、三面或 HR 面节点开始记录。</div></div>`;
+      const selectedItem = sessions.find(item => item.job.id === archiveSelection.jobId && item.round.id === archiveSelection.roundId) || sessions[0];
+      const selectedJob = selectedItem.job;
+      const selectedRound = selectedItem.round;
+      const session = getSession(selectedJob, selectedRound.id);
+      const companies = [...new Set(sessions.map(item => item.job.company))];
+      const tree = companies.map(company => {
+        const companyJobs = [...new Map(sessions.filter(item => item.job.company === company).map(item => [item.job.id, item.job])).values()];
+        const companyMark = companyJobs[0]?.mark || company.slice(0,1);
+        return `<div class="tree-company">${icon("folder","sm")}<span>${escapeHtml(company)}</span></div>${companyJobs.map(job => `<button class="tree-job ${job.id === selectedJob.id ? "selected" : ""}" data-action="select-archive-job" data-job-id="${escapeHtml(job.id)}">${icon("chevron","sm")}<span>${escapeHtml(job.title)}</span></button><div class="tree-rounds">${rounds.filter(round => getSession(job, round.id).questions.length).map(round => `<button class="tree-round ${job.id === selectedJob.id && round.id === selectedRound.id ? "selected" : ""}" data-action="select-archive-round" data-job-id="${escapeHtml(job.id)}" data-round="${round.id}"><span>${escapeHtml(round.label)}</span><span class="tree-round-count">${getSession(job, round.id).questions.length} 题</span></button>`).join("")}</div>`).join("")}`;
+      }).join("");
+      const qa = session.questions.map((item, index) => `<article class="archive-pair"><div class="archive-cell"><div class="archive-label">题目 ${String(index + 1).padStart(2,"0")}</div><div class="archive-text">${escapeHtml(item.question || "未填写题目")}</div></div><div class="archive-cell"><div class="archive-label">回答</div><div class="archive-text">${escapeHtml(item.answer || "尚未记录回答")}</div></div></article>`).join("");
+      return `${heading}<div class="archive-layout"><aside class="archive-tree" aria-label="面试归档目录"><div class="tree-heading"><span>归档目录</span><span>${sessions.length} 轮</span></div>${tree || `<div class="empty-state">还没有面试复盘</div>`}</aside><section class="archive-content"><div class="archive-title"><div><h2>${escapeHtml(selectedJob.company)} · ${escapeHtml(selectedJob.title)}</h2><p>${escapeHtml(selectedRound.label)} · ${fmtDate(session.date)} · ${escapeHtml(session.result || "待安排")}</p></div><button class="button small" data-action="edit-archive" data-job-id="${escapeHtml(selectedJob.id)}" data-round="${selectedRound.id}">编辑复盘 ${icon("arrow","sm")}</button></div><div class="archive-qa">${qa || `<div class="empty-state"><strong>这一轮还没有记录</strong>打开复盘编辑器，补充题目和回答。</div>`}</div></section></div>`;
+    }
+
+    function renderInterviewEditor() {
+      const job = getJob(currentJobId) || jobs[0];
+      if (!job) return `${renderPageHeading("面试复盘", "") }<div class="detail-sheet"><div class="empty-state"><strong>还没有可编辑的面试</strong>先将一个岗位标记为已投递。</div></div>`;
+      const round = rounds.find(item => item.id === currentRoundId) || rounds[0];
+      const session = getSession(job, round.id);
+      if (!session.questions.length) session.questions.push({ id: `q-${Date.now()}`, question: "", answer: "" });
+      if (!session.questions.some(item => item.id === currentQuestionId)) currentQuestionId = session.questions[0].id;
+      const question = session.questions.find(item => item.id === currentQuestionId) || session.questions[0];
+      const tabs = session.questions.map((item, index) => `<button class="question-tab ${item.id === question.id ? "selected" : ""}" data-action="select-question" data-question-id="${escapeHtml(item.id)}" aria-label="选择第 ${index + 1} 道题">${index + 1}</button>`).join("");
+      const heading = `<div class="page-heading"><div><button class="button quiet small" data-action="back-to-job">${icon("back","sm")}返回岗位</button><h1 style="margin-top:10px">${escapeHtml(round.label)} · 面试复盘</h1><div class="page-subtitle">${escapeHtml(job.company)} · ${escapeHtml(job.title)}</div></div><div class="heading-actions"><button class="button" data-action="open-archive">${icon("book","sm")}查看归档</button><button class="button primary" data-action="save-interview">${icon("save","sm")}保存记录</button></div></div>`;
+      return `${heading}<div class="detail-sheet"><div class="detail-head"><div class="company-title"><span class="company-mark ${escapeHtml(job.markTone)}">${escapeHtml(job.mark)}</span><div><div class="company-name">本轮面试信息</div><div class="job-inline-meta" style="margin-top:8px"><span class="badge ${session.result === "通过" ? "green" : ""}">${escapeHtml(session.result || "进行中")}</span></div></div></div><div class="editor-meta"><label class="sr-only" for="round-choice">面试轮次</label><select id="round-choice">${rounds.map(item => `<option value="${item.id}" ${item.id === round.id ? "selected" : ""}>${item.label}</option>`).join("")}</select><label class="sr-only" for="interview-date">面试日期</label><input id="interview-date" type="date" value="${escapeHtml(session.date)}"><label class="sr-only" for="interview-result">面试结果</label><select id="interview-result">${["进行中","待安排","通过","待反馈","未通过"].map(value => `<option ${value === session.result ? "selected" : ""}>${value}</option>`).join("")}</select></div></div><div class="qa-workspace"><section class="qa-column"><div class="qa-column-head"><strong>题目</strong><button class="button small" data-action="add-question">${icon("plus","sm")}添加题目</button></div><div class="question-list" aria-label="本轮题目">${tabs}</div><div class="editor-field"><label class="field-label" for="question-text"><span>题目内容</span><span>题目 ${session.questions.indexOf(question) + 1} / ${session.questions.length}</span></label><textarea id="question-text" class="editor-area" placeholder="记录面试官提出的问题...">${escapeHtml(question.question)}</textarea><div class="editor-foot"><span>按面试顺序整理，方便复盘回看</span><button class="button quiet small" data-action="remove-question" ${session.questions.length <= 1 ? "disabled" : ""}>${icon("trash","sm")}删除题目</button></div></div></section><section class="qa-column"><div class="qa-column-head"><strong>回答</strong><span>个人复盘内容</span></div><div class="editor-field"><label class="field-label" for="answer-text"><span>我的回答</span><span>可持续补充</span></label><textarea id="answer-text" class="editor-area answer" placeholder="写下当时的回答、思路和遗漏点...">${escapeHtml(question.answer)}</textarea><div class="editor-foot"><span>回答与题目分开保存</span><span class="save-status"><i class="status-dot"></i>本地草稿</span></div></div></section></div><div style="padding:15px 17px 17px"><label class="field-label" for="session-summary">本轮总结</label><textarea id="session-summary" class="session-summary" placeholder="记录面试感受、待补知识点或后续行动">${escapeHtml(session.summary)}</textarea></div></div>`;
+    }
+
+    function openAddDialog(mode = "file") {
+      addMode = mode;
+      setAddMode(mode);
+      $("#add-dialog").showModal();
+    }
+    function previewImport(drafts) {
+      importDrafts = drafts;
+      const batch = drafts.length > 1;
+      $("#batch-preview").hidden = !batch;
+      $("#file-fields").hidden = batch;
+      $("#file-label").textContent = `已读取 ${drafts.length} 个岗位`;
+      $("#file-note").textContent = batch ? "勾选要导入的岗位，可展开每条记录修正字段。保存后统一加入看看机会。" : "已在本机解析文件，检查并补全公司与岗位名称后保存。";
+      if (batch) {
+        $("#batch-preview").innerHTML = drafts.map((draft, index) => `<details class="import-row" data-import-index="${index}" style="border-bottom:1px solid var(--rule);padding:10px 0"><summary style="cursor:pointer;font-size:12px"><input type="checkbox" class="import-include" checked aria-label="导入第 ${index + 1} 个岗位"> ${index + 1}. ${escapeHtml(draft.company || "待填写公司")} · ${escapeHtml(draft.title || "待填写岗位")}</summary><div class="form-grid" style="margin:12px 0">${[["company","公司"],["title","岗位"],["city","城市"],["publishedAt","发布时间"]].map(([key,label]) => `<div class="form-field"><label for="import-${index}-${key}">${label}</label><input id="import-${index}-${key}" data-field="${key}" type="${key === "publishedAt" ? "date" : "text"}" value="${escapeHtml(draft[key] || "")}"></div>`).join("")}<div class="form-field full"><label for="import-${index}-jd">岗位描述</label><textarea id="import-${index}-jd" data-field="jd">${escapeHtml(draft.jd || "")}</textarea></div></div></details>`).join("");
+      } else {
+        const draft = drafts[0];
+        $("#file-company").value = draft.company || "";
+        $("#file-title").value = draft.title || "";
+        $("#file-published").value = draft.publishedAt || "";
+        $("#file-city").value = draft.city || "";
+        $("#file-jd").value = draft.jd || "";
+        $("#file-note").dataset.source = draft.source || "manual";
+        $("#file-note").dataset.sourceUrl = draft.sourceUrl || "";
+      }
+    }
+    function setAddMode(mode) {
+      addMode = mode;
+      $$(".dialog-tab").forEach(button => {
+        const active = button.dataset.mode === mode;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+      });
+      $$('[data-mode-panel]').forEach(panel => panel.hidden = panel.dataset.modePanel !== mode);
+      const titles = { file: "从文件导入岗位", url: "从招聘网址录入", manual: "手动录入岗位" };
+      $("#add-title").textContent = titles[mode];
+    }
+    async function addOpportunity({ company, title, city, posted, source, sourceUrl = "", salary = "面议", jd, tags = [], team = "" }) {
+      if (isDesktop) {
+        await desktopInvoke("create_job", { draft: {
+          company: company.trim(),
+          title: title.trim(),
+          city: city.trim(),
+          team,
+          publishedAt: posted || null,
+          sourceUrl: sourceUrl || null,
+          source,
+          salary,
+          jd,
+          tags,
+        } });
+        await refreshNativeData();
+        return;
+      }
+      const id = `job-${Date.now()}`;
+      const mark = company.trim().slice(0, 1) || "岗";
+      opportunities.unshift({ id, company: company.trim(), mark, tone: "green", title: title.trim(), city: city.trim() || "未注明", posted: posted || null, created: new Date().toISOString().slice(0,10), source, salary, jd, tags });
+      render();
+    }
+    async function applyOpportunity(id) {
+      if (isDesktop) {
+        const selected = opportunities.find(job => job.id === id);
+        if (!selected) return;
+        try {
+          await desktopInvoke("mark_job_applied", { jobId: id });
+          currentJobId = id;
+          await refreshNativeData();
+          setView("pipeline");
+          showToast(`${selected.company} · ${selected.title} 已移入「正在推进」`);
+        } catch (error) {
+          showToast(`投递状态未更新：${String(error)}`);
+        }
+        return;
+      }
+      const index = opportunities.findIndex(job => job.id === id);
+      if (index < 0) return;
+      const source = opportunities.splice(index, 1)[0];
+      const today = new Date().toISOString().slice(0,10);
+      const applied = { ...source, id: `applied-${source.id}`, status: "applied", stageIndex: 0, activeRound: "first", appliedAt: today, updated: "刚刚", team: "招聘岗位", activity: ["已标记投递", "录入岗位信息"], sessions: Object.fromEntries(rounds.map(round => [round.id, { date: "", result: "待安排", summary: "", questions: [] }])) };
+      jobs.unshift(applied);
+      currentJobId = applied.id;
+      setView("pipeline");
+      showToast(`${source.company} · ${source.title} 已移入「正在推进」`);
+    }
+    async function persistResumeEditor(notify = false) {
+      const resume = resumes.find(item => item.id === selectedResumeId);
+      if (!resume || !$("#resume-content")) return false;
+      resume.name = $("#resume-name").value.trim();
+      resume.targetRole = $("#resume-target-role").value.trim();
+      resume.content = $("#resume-content").value;
+      if (!resume.name || !resume.targetRole) { showToast("请填写简历名称和目标岗位"); return false; }
+      if (isDesktop) {
+        try {
+          await desktopInvoke("save_resume", { resumeId: resume.id, name: resume.name, targetRole: resume.targetRole, content: resume.content });
+          resume.updatedAt = new Date().toISOString();
+          if (notify) showToast("简历修改已保存到本机");
+          return true;
+        } catch (error) { showToast(`简历保存失败：${String(error)}`); return false; }
+      }
+      if (notify) showToast("当前预览不会保存到本机");
+      return true;
+    }
+    async function deleteJob(id) {
+      const job = getAnyJob(id);
+      if (!job) return;
+      if (!window.confirm(`删除「${job.company} · ${job.title}」？此操作会同时删除招聘进度和面试记录，无法撤销。`)) return;
+      try {
+        if (isDesktop) await desktopInvoke("delete_job", { jobId: id });
+        else {
+          opportunities = opportunities.filter(item => item.id !== id);
+          jobs = jobs.filter(item => item.id !== id);
+        }
+        for (const round of rounds) localStorage.removeItem(draftKey(id, round.id));
+        currentJobId = jobs.find(item => item.id !== id)?.id || null;
+        if (jobDetailId === id) jobDetailId = null;
+        if (isDesktop) await refreshNativeData(); else render();
+        if (activeView === "job-detail") setView(jobDetailReturnView);
+        showToast("岗位及相关面试记录已删除");
+      } catch (error) { showToast(`岗位未删除：${String(error)}`); }
+    }
+    async function openJobUrl(id) {
+      const job = getAnyJob(id);
+      if (!job?.sourceUrl) { showToast("该岗位没有记录 JD 网址"); return; }
+      try {
+        if (isDesktop) await desktopInvoke("open_job_url", { url: job.sourceUrl });
+        else window.open(job.sourceUrl, "_blank", "noopener,noreferrer");
+      } catch (error) { showToast(`无法打开 JD：${String(error)}`); }
+    }
+    function openInterview(roundId) {
+      if (!getJob(currentJobId)) {
+        showToast("先将一个岗位标记为已投递，再添加面试记录");
+        return;
+      }
+      currentRoundId = roundId;
+      const job = getJob(currentJobId) || jobs[0];
+      const session = getSession(job, roundId);
+      if (!session.questions.length) {
+        const id = `q-${Date.now()}`;
+        session.questions.push({ id, question: "", answer: "" });
+        currentQuestionId = id;
+      } else currentQuestionId = session.questions[0].id;
+      setView("interview");
+    }
+    function saveCurrentQuestion() {
+      const job = getJob(currentJobId);
+      if (!job) return;
+      const session = getSession(job, currentRoundId);
+      const selected = session.questions.find(item => item.id === currentQuestionId);
+      if (!selected) return;
+      selected.question = $("#question-text")?.value || "";
+      selected.answer = $("#answer-text")?.value || "";
+      session.date = $("#interview-date")?.value || "";
+      session.result = $("#interview-result")?.value || "进行中";
+      session.summary = $("#session-summary")?.value || "";
+      if (isDesktop && activeView === "interview") {
+        try { localStorage.setItem(draftKey(job.id, currentRoundId), JSON.stringify(session)); }
+        catch { showToast("草稿空间不足，请点击保存记录将内容存入数据库"); }
+      }
+    }
+
+    document.addEventListener("input", event => {
+      if (event.target.matches('#question-text, #answer-text, #session-summary, #interview-date, #interview-result')) saveCurrentQuestion();
+      if (event.target.id === "resume-name") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.name = event.target.value; }
+      if (event.target.id === "resume-target-role") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.targetRole = event.target.value; }
+      if (event.target.id === "resume-content") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.content = event.target.value; }
+      if (event.target.matches("#resume-name, #resume-target-role, #resume-content")) {
+        clearTimeout(resumeSaveTimer);
+        resumeSaveTimer = setTimeout(() => persistResumeEditor(false), 900);
+      }
+    });
+
+    document.addEventListener("click", async event => {
+      const nav = event.target.closest("[data-view]");
+      if (nav) { setView(nav.dataset.view); return; }
+      const mode = event.target.closest(".dialog-tab[data-mode]");
+      if (mode) { setAddMode(mode.dataset.mode); return; }
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      const action = button.dataset.action;
+      if (action === "open-add") { openAddDialog(button.dataset.mode || "file"); return; }
+      if (action === "close-dialog") { $("#add-dialog").close(); return; }
+      if (action === "pick-file") {
+        button.disabled = true;
+        try {
+          const drafts = await desktopInvoke("parse_job_file");
+          if (!drafts) return;
+          previewImport(drafts);
+        } catch (error) {
+          showToast(`文件解析失败：${String(error)}`);
+        } finally {
+          button.disabled = false;
+        }
+        return;
+      }
+      if (action === "preview-url") {
+        const value = $("#job-url").value.trim();
+        if (!value) { showToast("请先粘贴招聘网址"); $("#job-url").focus(); return; }
+        if (!isDesktop) { showToast("静态原型不会访问网络；桌面版会在确认后抓取公开页面"); return; }
+        button.disabled = true;
+        try {
+          const draft = await desktopInvoke("preview_job_url", { url: value });
+          $("#url-company").value = draft.company || "";
+          $("#url-title").value = draft.title || "";
+          $("#url-published").value = draft.publishedAt || "";
+          $("#url-city").value = draft.city || "";
+          $("#url-jd").value = draft.jd || "";
+          $("#url-note").textContent = "抓取完成。请确认公司、岗位和发布时间；未识别的字段保持为空。";
+          $("#url-note").dataset.sourceUrl = draft.sourceUrl || value;
+          showToast("岗位网页已读取，请检查预览字段");
+        } catch (error) {
+          showToast(`网页抓取失败：${String(error)}`);
+        } finally {
+          button.disabled = false;
+        }
+        return;
+      }
+      if (action === "select-job") { currentJobId = button.dataset.jobId; render(); return; }
+      if (action === "show-job-jd") {
+        jobDetailId = button.dataset.jobId;
+        jobDetailReturnView = activeView === "pipeline" ? "pipeline" : "opportunities";
+        setView("job-detail"); return;
+      }
+      if (action === "back-to-job-list") { setView(jobDetailReturnView); return; }
+      if (action === "open-job-url") { await openJobUrl(button.dataset.jobId); return; }
+      if (action === "delete-job") { await deleteJob(button.dataset.jobId); return; }
+      if (action === "set-stage") {
+        const job = getJob(currentJobId); if (!job) return;
+        const nextStage = Number(button.dataset.stage);
+        if (isDesktop) {
+          try {
+            await desktopInvoke("update_job_stage", { jobId: job.id, stageIndex: nextStage });
+            await refreshNativeData();
+            showToast(`已更新到「${stageNames[nextStage]}」`);
+          } catch (error) { showToast(`进度未更新：${String(error)}`); }
+          return;
+        }
+        job.stageIndex = nextStage; job.updated = "刚刚";
+        job.activity.unshift(`进度更新至${stageNames[job.stageIndex]}`); job.activity = job.activity.slice(0,3);
+        if (job.stageIndex === 5 && !job.activeRound) job.activeRound = "first";
+        render(); showToast(`已更新到「${stageNames[job.stageIndex]}」`); return;
+      }
+      if (action === "open-interview") { openInterview(button.dataset.round); return; }
+      if (action === "apply-job") { await applyOpportunity(button.dataset.jobId); return; }
+      if (action === "select-archive-job") {
+        archiveSelection.jobId = button.dataset.jobId;
+        const job = getJob(archiveSelection.jobId);
+        const firstRound = rounds.find(round => getSession(job, round.id).questions.length);
+        archiveSelection.roundId = firstRound?.id || "first";
+        render(); return;
+      }
+      if (action === "select-archive-round") { archiveSelection = { jobId: button.dataset.jobId, roundId: button.dataset.round }; render(); return; }
+      if (action === "edit-archive") { currentJobId = button.dataset.jobId; openInterview(button.dataset.round); return; }
+      if (action === "open-archive") { saveCurrentQuestion(); archiveSelection = { jobId: currentJobId, roundId: currentRoundId }; setView("archive"); return; }
+      if (action === "back-to-job") { saveCurrentQuestion(); setView("pipeline"); return; }
+      if (action === "select-question") { saveCurrentQuestion(); currentQuestionId = button.dataset.questionId; render(); return; }
+      if (action === "add-question") { saveCurrentQuestion(); const session = getSession(getJob(currentJobId), currentRoundId); const q = { id: `q-${Date.now()}`, question: "", answer: "" }; session.questions.push(q); currentQuestionId = q.id; render(); $("#question-text")?.focus(); return; }
+      if (action === "remove-question") {
+        const session = getSession(getJob(currentJobId), currentRoundId);
+        if (session.questions.length <= 1) return;
+        session.questions = session.questions.filter(item => item.id !== currentQuestionId);
+        currentQuestionId = session.questions[0].id; render(); showToast("题目已删除"); return;
+      }
+      if (action === "save-interview") {
+        saveCurrentQuestion(); const job = getJob(currentJobId); const session = getSession(job, currentRoundId);
+        if (!session.date) session.date = new Date().toISOString().slice(0,10);
+        session.result = $("#interview-result")?.value || "进行中";
+        if (isDesktop) {
+          try {
+            await desktopInvoke("save_interview_session", { session: {
+              jobId: job.id,
+              roundType: currentRoundId,
+              date: session.date,
+              result: session.result,
+              summary: $("#session-summary")?.value || "",
+              questions: session.questions.map((item, index) => ({ id: item.id || `q-${index}`, question: item.question || "", answer: item.answer || "" })),
+            } });
+            localStorage.removeItem(draftKey(job.id, currentRoundId));
+            await refreshNativeData();
+            showToast("面试记录已保存到本机归档");
+          } catch (error) {
+            showToast(`面试记录未保存：${String(error)}`);
+          }
+          return;
+        }
+        job.updated = "刚刚"; job.activity.unshift(`${rounds.find(item => item.id === currentRoundId).label}复盘已保存`); job.activity = job.activity.slice(0,3);
+        showToast("面试记录已保存到公司与岗位档案"); render(); return;
+      }
+      if (action === "new-interview") { currentJobId = jobs[0]?.id || null; openInterview("first"); return; }
+      if (action === "import-resume") {
+        if (!isDesktop) { showToast("請在桌面版中選擇 Word 簡歷"); return; }
+        button.disabled = true;
+        try {
+          const imported = await desktopInvoke("import_resume");
+          if (!imported) return;
+          await refreshNativeData();
+          selectedResumeId = imported.id;
+          setView("resumes"); showToast("簡歷已導入，原始 Word 文件已保留");
+        } catch (error) { showToast(`簡歷導入失敗：${String(error)}`); }
+        finally { button.disabled = false; }
+        return;
+      }
+      if (action === "select-resume") { await persistResumeEditor(false); selectedResumeId = button.dataset.resumeId; render(); return; }
+      if (action === "save-resume") { await persistResumeEditor(true); render(); return; }
+      if (action === "export-resume-word") {
+        if (!await persistResumeEditor(false)) return;
+        try {
+          const saved = await desktopInvoke("export_resume_docx", { resumeId: button.dataset.resumeId });
+          if (saved) showToast("Word 简历已导出");
+        } catch (error) { showToast(`Word 导出失败：${String(error)}`); }
+        return;
+      }
+      if (action === "export-resume-pdf") {
+        if (!await persistResumeEditor(false)) return;
+        const resume = resumes.find(item => item.id === button.dataset.resumeId);
+        if (!resume) return;
+        $("#resume-print-sheet").innerHTML = resumePrintHtml(resume, resume.content);
+        document.body.classList.add("print-resume");
+        window.print();
+        setTimeout(() => document.body.classList.remove("print-resume"), 1200);
+        return;
+      }
+    });
+
+    $("#global-search").addEventListener("input", event => {
+      searchQuery = event.target.value;
+      if (activeView !== "interview" && activeView !== "resumes") render();
+    });
+    document.addEventListener("change", event => {
+      if (event.target.id === "city-filter") { cityFilter = event.target.value; render(); return; }
+      if (event.target.id === "opportunity-sort") { opportunitySort = event.target.value; render(); return; }
+      if (event.target.id !== "round-choice") return;
+      saveCurrentQuestion(); currentRoundId = event.target.value;
+      const session = getSession(getJob(currentJobId), currentRoundId);
+      if (!session.questions.length) session.questions.push({ id: `q-${Date.now()}`, question: "", answer: "" });
+      currentQuestionId = session.questions[0].id; render();
+    });
+    $("#job-file").addEventListener("change", async event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      $("#file-label").textContent = file.name;
+      if (file.name.toLowerCase().endsWith(".md")) {
+        const text = await file.text();
+        const firstHeading = text.match(/^\s*#\s+(.+)$/m)?.[1] || "";
+        const company = text.match(/(?:公司|企业|company)\s*[:：]\s*(.+)/i)?.[1]?.trim() || "";
+        const title = text.match(/(?:岗位|职位|职位名称|title)\s*[:：]\s*(.+)/i)?.[1]?.trim() || firstHeading;
+        const published = text.match(/(?:发布时间|发布日期|发布于)\s*[:：]\s*(\d{4}-\d{2}-\d{2})/)?.[1] || "";
+        $("#file-company").value = company;
+        $("#file-title").value = title;
+        $("#file-published").value = published;
+        $("#file-city").value = text.match(/(?:地点|城市)\s*[:：]\s*(.+)/)?.[1]?.trim() || "";
+        $("#file-note").textContent = `已读取 Markdown 文本，共 ${text.length} 个字符；字段为候选值，确认后录入。`;
+        $("#file-note").dataset.jd = text.replace(/^---[\s\S]*?---\s*/m, "").slice(0, 20000);
+        $("#file-jd").value = $("#file-note").dataset.jd;
+        $("#file-note").dataset.source = "Markdown";
+        $("#file-note").dataset.sourceUrl = "";
+      } else {
+        $("#file-note").textContent = "Word 与 CSV 文件请在桌面版中导入，以获取解析预览和批量保存。";
+        $("#file-note").dataset.jd = "";
+        $("#file-note").dataset.source = "docx";
+        $("#file-note").dataset.sourceUrl = "";
+      }
+    });
+    $("#add-dialog").addEventListener("click", event => {
+      if (event.target === $("#add-dialog")) $("#add-dialog").close();
+    });
+    $("#add-dialog").addEventListener("close", () => {
+      $("#job-file").value = "";
+    });
+    $("#add-dialog").addEventListener("click", async event => {
+      if (!event.target.closest('[data-action="save-job"]')) return;
+      const saveButton = event.target.closest('[data-action="save-job"]');
+      if (addMode === "file" && importDrafts.length > 1) {
+        const drafts = $$(".import-row").filter(row => $(".import-include", row).checked).map(row => {
+          const draft = { ...importDrafts[Number(row.dataset.importIndex)] };
+          $$("[data-field]", row).forEach(field => draft[field.dataset.field] = field.value);
+          draft.publishedAt ||= null;
+          return draft;
+        });
+        if (!drafts.length) { showToast("至少勾选一个岗位"); return; }
+        saveButton.disabled = true;
+        try {
+          await desktopInvoke("create_jobs", { drafts });
+          await refreshNativeData();
+          $("#add-dialog").close(); setView("opportunities");
+          showToast(`已导入 ${drafts.length} 个岗位`);
+          importDrafts = []; $("#batch-preview").hidden = true; $("#file-fields").hidden = false;
+        } catch (error) { showToast(`批量导入未保存：${String(error)}`); }
+        finally { saveButton.disabled = false; }
+        return;
+      }
+      let fields;
+      if (addMode === "manual") fields = { company: $("#manual-company").value, title: $("#manual-title").value, city: $("#manual-city").value, posted: $("#manual-published").value, source: "手动录入", jd: $("#manual-jd").value };
+      if (addMode === "file") fields = { company: $("#file-company").value, title: $("#file-title").value, city: $("#file-city").value, posted: $("#file-published").value, source: $("#file-note").dataset.source || ($("#job-file").files?.[0]?.name.endsWith(".md") ? "Markdown" : "docx"), sourceUrl: $("#file-note").dataset.sourceUrl || "", jd: $("#file-jd").value };
+      if (addMode === "url") fields = { company: $("#url-company").value, title: $("#url-title").value, city: $("#url-city").value, posted: $("#url-published").value, source: "url", sourceUrl: $("#url-note").dataset.sourceUrl || $("#job-url").value, jd: $("#url-jd").value };
+      if (!fields?.company.trim() || !fields?.title.trim()) { showToast("请先填写公司和岗位名称"); (addMode === "file" ? $("#file-company") : addMode === "url" ? $("#url-company") : $("#manual-company")).focus(); return; }
+      try {
+        saveButton.disabled = true;
+        await addOpportunity(fields);
+        $("#add-dialog").close(); setView("opportunities"); showToast(`${fields.company} · ${fields.title} 已加入看看机会`);
+      } catch (error) {
+        showToast(`岗位未保存：${String(error)}`);
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    render();
+    initializeDesktop();
+  </script>
+</body>
+</html>

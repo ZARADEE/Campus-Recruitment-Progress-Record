@@ -1,0 +1,21 @@
+{
+  "name": "campus-job-tracker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 1420 --strictPort",
+    "build": "vite build",
+    "tauri": "tauri",
+    "desktop:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/desktop.ps1 dev",
+    "desktop:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/desktop.ps1 build",
+    "desktop:test": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/desktop.ps1 test"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "vite": "^6.0.0"
+  }
+}

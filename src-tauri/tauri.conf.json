@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "求职进度台",
+  "version": "0.1.0",
+  "identifier": "com.campus.recruitment.progress",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "create": false,
+        "title": "求职进度台",
+        "width": 1152,
+        "height": 640,
+        "minWidth": 900,
+        "minHeight": 560,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset:; connect-src ipc: http://ipc.localhost http://127.0.0.1:1420 ws://127.0.0.1:1420"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "useLocalToolsDir": true,
+    "targets": ["nsis"],
+    "category": "Productivity",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "shortDescription": "校招岗位跟进与面试复盘"
+  }
+}

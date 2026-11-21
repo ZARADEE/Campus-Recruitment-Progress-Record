@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.toolchain/
+data/
+src-tauri/target/
+src-tauri/gen/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.impeccable/review/
+__pycache__/
+*.py[cod]
+*.log
