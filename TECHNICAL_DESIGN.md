@@ -9,6 +9,7 @@
 - **看看机会**：管理尚未投递的岗位；从 `.md` / `.docx` / `.csv` 导入或从招聘网址抓取；展示录入时间及 JD 明确给出的发布时间。
 - **正在推进**：管理已投递岗位；记录招聘阶段与最近活动时间；每个面试节点可打开对应复盘。
 - **面试记录**：按公司、岗位、面试轮次归档问题与回答，支持增改、排序和回看。
+- **知识积累**：按分类保存独立的个人文档，与岗位面试问答分开存储。
 
 阶段节点建议为投递、测评、笔试、AI 面试、简历筛选、面试、Offer、入职。四种面试轮次为一面、二面、三面、HR 面。阶段表示整体招聘流程位置；一次实际面试则保存为独立面试记录。
 
@@ -39,21 +40,24 @@ flowchart LR
 | `job_events` | `id`, `job_id`, `event_type`, `from_stage`, `to_stage`, `occurred_at`, `note`；追加式保存投递、阶段变化、Offer、关闭等历史 |
 | `interview_sessions` | `id`, `job_id`, `round_type`, `round_index`, `interviewed_at`, `result`, `summary`, `created_at`, `updated_at`；一场具体面试一条记录 |
 | `interview_questions` | `id`, `session_id`, `sort_order`, `question_text`, `answer_text`, `updated_at`；问题与回答分字段保存，允许空回答草稿 |
+| `knowledge_documents` | `id`, `category`, `title`, `content`, `created_at`, `updated_at`；独立保存个人知识文档 |
 
-`jobs.status` 使用 `opportunity`、`applied`、`closed`。`round_type` 使用 `first`、`second`、`third`、`hr`。`round_index` 允许补面/复试重复轮次。外键和唯一约束维护归属关系。归档树由 company → jobs → interview sessions 查询构造，不在磁盘上另建一套副本目录。
+`jobs.status` 使用 `opportunity`、`applied`、`closed`，其中 `closed` 表示流程已终止。终止只改变岗位状态并追加事件，不删除岗位、阶段或面试数据。`round_type` 使用 `first`、`second`、`third`、`hr`。外键和唯一约束维护归属关系。面试归档按 company → jobs → interview sessions 构造；知识目录按 category → documents 构造，二者彼此独立。
 
 ## 时间与状态规则
 
 - 未投递岗位展示“录入于 `created_at`”和“发布于 `published_at`”。仅在文件或网页给出明确发布日期时才填写 `published_at`；缺失时显示空值。
 - 点击“已投递”时，在一个事务中设置 `status=applied`、`applied_at`、初始 `last_activity_at` 并写入投递事件，岗位随即从机会列表移到正在推进列表。
 - 阶段更新、面试记录保存、Offer 状态变化等有意义的用户操作会更新 `last_activity_at`。打开页面、搜索、筛选不改变此时间。
-- 关闭或拒绝的岗位可保留在历史里。显式删除需要二次确认，并提示会级联删除关联的阶段事件和面试复盘。
+- 点击“终止流程”将岗位改为 `closed`、刷新最近活动时间并写入事件；终止岗位仍能查看，流程节点不可再改。显式删除需要二次确认，并提示会级联删除关联的阶段事件和面试复盘。
 
-### 岗位详情和个人简历
+### 岗位详情、知识积累和个人简历
 
 机会列表用来源网址替代薪资展示；岗位详情在应用内显示已保存 JD，另提供打开官方页面的操作。机会与推进列表按公司连续排序。
 
 简历原件保存在本地文件夹，编辑文本、目标岗位和显示名称存入 SQLite。Word 导出生成 DOCX；PDF 通过桌面 WebView 的打印对话框生成 A4 文件。
+
+知识积累以独立的 `knowledge_documents` 表保存分类、标题和纯文本正文。文档可编辑、自动保存和删除，不复用岗位或面试记录字段。
 
 ## 导入和 JD 抓取
 
@@ -79,8 +83,11 @@ Rust 端设置连接和总超时、响应体上限、有限跳转次数和每域
 | `create_job(draft)` | 校验并创建岗位草稿 |
 | `mark_job_applied(job_id, applied_at)` | 原子迁移到正在推进并追加事件 |
 | `update_job_stage(job_id, stage, occurred_at)` | 保存阶段与事件 |
+| `terminate_job(job_id)` | 将已投递岗位标为终止并保留相关记录 |
 | `list_interview_archive(filter)` | 查询公司、岗位、轮次归档 |
 | `save_interview_session(session)` | 事务保存面试及问答，并更新时间 |
+| `list_knowledge_documents()` / `create_knowledge_document(category, title)` | 查询或新建知识文档 |
+| `save_knowledge_document(...)` / `delete_knowledge_document(id)` | 编辑或删除独立的知识文档 |
 | `export_backup(path)` / `import_backup(path)` | 导出、校验和恢复版本化 JSON 备份 |
 
 所有命令校验长度、枚举、日期和外键。错误转为稳定错误码及可本地化提示，不把敏感路径或响应原文直接返回界面。

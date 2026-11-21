@@ -51,6 +51,16 @@ pub struct JobRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct KnowledgeDocument {
+    pub id: String,
+    pub category: String,
+    pub title: String,
+    pub content: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InterviewSession {
     pub date: String,
     pub result: String,

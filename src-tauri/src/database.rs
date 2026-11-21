@@ -89,10 +89,20 @@ impl AppState {
                     updated_at TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS knowledge_documents (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    category TEXT NOT NULL DEFAULT '未分类',
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_jobs_status_activity ON jobs(status, last_activity_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company_id, title);
                 CREATE INDEX IF NOT EXISTS idx_events_job_time ON job_events(job_id, occurred_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_sessions_job ON interview_sessions(job_id, updated_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_knowledge_documents_category ON knowledge_documents(category, title);
                 ",
             )
             .map_err(|error| error.to_string())?;

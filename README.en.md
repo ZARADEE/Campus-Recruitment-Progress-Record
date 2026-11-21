@@ -19,8 +19,24 @@ A local-first Windows desktop app for capturing job openings, tracking applicati
 - Track publication, entry, and recent activity dates; view saved descriptions and source URLs.
 - Group roles by company and follow applications through assessment, interviews, offers, and onboarding.
 - Organize first, second, third, and HR interview questions, answers, outcomes, and notes.
+- Mark an application as terminated while retaining its role and interview records.
+- Keep technical notes and personal references in a categorized knowledge area separate from interview records.
 - Edit role-specific resumes and export them to Word or PDF.
 - Confirm before deleting a role and its associated progress and interview records.
+
+## Desktop Screenshots
+
+Application pipeline and terminated status:
+
+<p align="center"><img src="docs/screenshots/pipeline.png" width="920" alt="Desktop application pipeline screen"></p>
+
+Interview questions and answers:
+
+<p align="center"><img src="docs/screenshots/interview-records.png" width="920" alt="Desktop application interview archive screen"></p>
+
+Separate knowledge library and document editor:
+
+<p align="center"><img src="docs/screenshots/knowledge-notes.png" width="920" alt="Desktop application knowledge library screen"></p>
 
 ## Architecture
 

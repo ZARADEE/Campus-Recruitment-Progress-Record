@@ -82,6 +82,7 @@
     .button:active { transform: translateY(1px); }
     .button.primary { color: #fff; background: #196c53; border-color: #196c53; }
     .button.primary:hover { background: #145e48; border-color: #145e48; }
+    .button.danger { color: #9b3d38; border-color: #e3bcb8; background: #fff; }
     .button.quiet { border-color: transparent; background: transparent; color: var(--muted); }
     .button.quiet:hover { background: #eef2ee; color: var(--ink); }
     .button.small { height: 31px; padding: 0 9px; font-size: 11px; }
@@ -107,6 +108,8 @@
     .role-item:last-child { border-bottom: 0; }
     .role-item:hover { background: #f8faf7; }
     .role-item.selected { background: #f0f6f1; box-shadow: inset 3px 0 0 #218062; }
+    .role-item.terminated { background: #fbfaf9; }
+    .role-item.terminated .role-company, .role-item.terminated .role-title { color: #747c77; }
     .company-mark { width: 31px; height: 31px; border-radius: 7px 7px 7px 2px; display: grid; place-items: center; color: #175f48; background: #ddede2; font-size: 11px; font-weight: 760; flex: 0 0 auto; }
     .company-mark.blue { color: #285d80; background: #e2eef5; }
     .company-mark.coral { color: #a93b38; background: #f9e4e0; }
@@ -117,6 +120,7 @@
     .role-title { margin-top: 4px; color: #3d4a44; font-size: 12px; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .role-meta { display: flex; justify-content: space-between; gap: 6px; margin-top: 8px; color: var(--muted); font-size: 10px; }
     .role-stage { color: #a43b39; font-weight: 650; white-space: nowrap; }
+    .role-stage.terminated { color: #7b625f; }
     .detail-sheet { min-width: 0; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); }
     .detail-head { padding: 19px 22px 17px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--rule); }
     .company-title { min-width: 0; display: flex; align-items: center; gap: 12px; }
@@ -147,9 +151,12 @@
     .stage-item.current .stage-node { border-color: var(--coral); background: var(--coral); box-shadow: 0 0 0 4px #fbe5e3; }
     .stage-item.current .stage-node::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: white; }
     .stage-node:hover { border-color: var(--coral); }
+    .stage-node:disabled { cursor: not-allowed; }
     .stage-label { margin-top: 8px; color: #67736d; font-size: 10px; white-space: nowrap; }
     .stage-item.complete .stage-label, .stage-item.current .stage-label { color: #a33936; font-weight: 700; }
     .stage-foot { height: 16px; margin-top: 4px; color: #a33936; font-size: 9px; white-space: nowrap; }
+    .termination-note { padding: 10px 22px; border-bottom: 1px solid var(--rule); color: #87413c; background: #fff7f6; font-size: 11px; }
+    .flow-action-row { padding: 10px 22px 0; display: flex; justify-content: flex-end; }
     .round-block { padding: 16px 22px 18px; border-bottom: 1px solid var(--rule); }
     .round-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .round-heading h2 { margin: 0; font-size: 12px; font-weight: 700; }
@@ -243,6 +250,18 @@
     .tree-round:hover, .tree-round.selected { border-left: 2px solid #168765; color: #175d47; background: #f0f6f1; }
     .tree-round-count { color: #819087; font-size: 9px; }
     .archive-content { min-width: 0; padding: 22px 25px; }
+    .knowledge-fields { display: grid; grid-template-columns: minmax(0,1fr) minmax(180px,.45fr); gap: 12px; margin: 17px 0; }
+    .knowledge-fields label { grid-column: 1 / -1; display: grid; gap: 6px; color: #647168; font-size: 10px; font-weight: 700; }
+    .knowledge-fields input { width: 100%; min-width: 0; height: 35px; padding: 0 9px; border: 1px solid var(--rule-strong); border-radius: 3px; font-size: 11px; }
+    .knowledge-body { width: 100%; min-height: 380px; padding: 13px; border: 1px solid var(--rule-strong); border-radius: 3px; color: #28362f; font: 12px/1.8 "Microsoft YaHei", sans-serif; resize: vertical; }
+    .knowledge-empty { min-height: 520px; display: grid; place-items: center; }
+    .knowledge-content { display: flex; flex-direction: column; }
+    .knowledge-title-wrap { min-width: 0; flex: 1; }
+    .knowledge-title-wrap label { display: grid; gap: 6px; color: #647168; font-size: 10px; font-weight: 700; }
+    .knowledge-title-wrap input { width: 100%; min-width: 0; height: 35px; padding: 0 9px; border: 1px solid var(--rule-strong); border-radius: 3px; font-size: 14px; font-weight: 700; }
+    .knowledge-title-wrap p { margin: 6px 0 0; color: var(--muted); font-size: 10px; }
+    .knowledge-actions { display: flex; align-items: center; gap: 7px; }
+    .knowledge-empty .empty-state { max-width: 300px; }
     .archive-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 17px; border-bottom: 1px solid var(--rule); }
     .archive-title h2 { margin: 0; font-size: 18px; line-height: 1.35; }
     .archive-title p { margin: 6px 0 0; color: var(--muted); font-size: 10px; }
@@ -458,6 +477,7 @@
       <div class="nav-label" style="margin-top:25px">复盘资料</div>
       <nav class="nav-stack">
         <button class="nav-link" data-view="archive" aria-label="面试记录"><svg class="icon"><use href="#i-book"/></svg><span class="nav-text">面试记录</span><span class="nav-count" id="archive-count">6</span></button>
+        <button class="nav-link" data-view="knowledge" aria-label="知识积累"><svg class="icon"><use href="#i-folder"/></svg><span class="nav-text">知识积累</span><span class="nav-count" id="knowledge-count">0</span></button>
         <button class="nav-link" data-view="resumes" aria-label="个人简历"><svg class="icon"><use href="#i-file"/></svg><span class="nav-text">个人简历</span><span class="nav-count" id="resume-count">0</span></button>
       </nav>
     </aside>
@@ -565,6 +585,13 @@
       { id: "alibaba", company: "阿里云", mark: "云", tone: "amber", title: "前端研发工程师", city: "杭州", posted: "2026-11-15", created: "2026-11-20", source: "招聘官网", salary: "面议", jd: "负责云产品控制台及开发者工具的前端实现，提升复杂业务场景下的操作效率。", tags: ["Vue", "设计系统", "云计算"] }
     ];
     let resumes = [];
+    let knowledgeDocuments = (() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem("campus-knowledge-documents") || "[]");
+        return Array.isArray(saved) ? saved : [];
+      }
+      catch { return []; }
+    })();
     const desktopInvoke = window.__TAURI__?.core?.invoke;
     const isDesktop = typeof desktopInvoke === "function";
     let activeView = "pipeline";
@@ -578,10 +605,12 @@
     let cityFilter = "";
     let opportunitySort = "created";
     let selectedResumeId = null;
+    let selectedKnowledgeId = null;
     let jobDetailId = null;
     let jobDetailReturnView = "opportunities";
     let toastTimer;
     let resumeSaveTimer;
+    let knowledgeSaveTimer;
 
     const $ = (selector, root = document) => root.querySelector(selector);
     const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -592,7 +621,7 @@
     const getAnyJob = id => getJob(id) || opportunities.find(job => job.id === id);
     const shortUrl = value => { try { const url = new URL(value); return `${url.hostname}${url.pathname === "/" ? "" : url.pathname}`; } catch { return value || "未提供"; } };
     const getSession = (job, roundId) => job.sessions[roundId] || (job.sessions[roundId] = { date: "", result: "待安排", summary: "", questions: [] });
-    const stageLabel = job => job.stageIndex === 5 ? `${rounds.find(round => round.id === job.activeRound)?.label || "一面"}中` : job.stageIndex === 7 ? "已入职" : job.stageIndex === 6 ? "Offer" : `${stageNames[job.stageIndex]}中`;
+    const stageLabel = job => job.status === "closed" ? "流程已终止" : job.stageIndex === 5 ? `${rounds.find(round => round.id === job.activeRound)?.label || "一面"}中` : job.stageIndex === 7 ? "已入职" : job.stageIndex === 6 ? "Offer" : `${stageNames[job.stageIndex]}中`;
     const matchesSearch = job => `${job.company} ${job.title} ${job.city} ${job.jd}`.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase());
     const draftKey = (jobId, roundId) => `campus-draft:${jobId}:${roundId}`;
     function restoreDrafts() {
@@ -615,10 +644,12 @@
 
     async function refreshNativeData() {
       const records = await desktopInvoke("list_jobs");
-      jobs = records.filter(job => job.status === "applied");
+      jobs = records.filter(job => job.status === "applied" || job.status === "closed");
       opportunities = records.filter(job => job.status === "opportunity");
       resumes = await desktopInvoke("list_resumes");
+      knowledgeDocuments = await desktopInvoke("list_knowledge_documents");
       if (!resumes.some(resume => resume.id === selectedResumeId)) selectedResumeId = resumes[0]?.id || null;
+      if (!knowledgeDocuments.some(document => document.id === selectedKnowledgeId)) selectedKnowledgeId = knowledgeDocuments[0]?.id || null;
       restoreDrafts();
       if (!getJob(currentJobId)) currentJobId = jobs[0]?.id || null;
       if (!getJob(archiveSelection.jobId)) {
@@ -657,13 +688,17 @@
         clearTimeout(resumeSaveTimer);
         persistResumeEditor(false);
       }
+      if (activeView === "knowledge") {
+        clearTimeout(knowledgeSaveTimer);
+        persistKnowledgeDocument(false);
+      }
       activeView = view;
       $$(".nav-link").forEach(button => {
         const isActive = button.dataset.view === view || (view === "interview" && button.dataset.view === "pipeline") || (view === "job-detail" && button.dataset.view === "opportunities");
         button.classList.toggle("active", isActive);
         if (isActive) button.setAttribute("aria-current", "page"); else button.removeAttribute("aria-current");
       });
-      const labels = { pipeline: "正在推进", opportunities: "看看机会", archive: "面试记录", interview: "面试复盘", resumes: "个人简历", "job-detail": "岗位 JD" };
+      const labels = { pipeline: "正在推进", opportunities: "看看机会", archive: "面试记录", knowledge: "知识积累", interview: "面试复盘", resumes: "个人简历", "job-detail": "岗位 JD" };
       $("#crumb-current").textContent = labels[view] || "正在推进";
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -674,11 +709,13 @@
       $("#pipeline-count").textContent = jobs.filter(job => job.status === "applied").length;
       const sessionCount = jobs.reduce((sum, job) => sum + Object.values(job.sessions).filter(session => session.questions.length > 0).length, 0);
       $("#archive-count").textContent = sessionCount;
+      $("#knowledge-count").textContent = knowledgeDocuments.length;
       $("#resume-count").textContent = resumes.length;
       const main = $("#main-content");
       if (activeView === "pipeline") main.innerHTML = renderPipeline();
       if (activeView === "opportunities") main.innerHTML = renderOpportunities();
       if (activeView === "archive") main.innerHTML = renderArchive();
+      if (activeView === "knowledge") main.innerHTML = renderKnowledge();
       if (activeView === "interview") main.innerHTML = renderInterviewEditor();
       if (activeView === "resumes") main.innerHTML = renderResumes();
       if (activeView === "job-detail") main.innerHTML = renderJobDescription();
@@ -690,19 +727,23 @@
 
     function renderPipeline() {
       const activeJobs = jobs.filter(job => job.status === "applied" && matchesSearch(job)).sort((a,b) => a.company.localeCompare(b.company, "zh-CN") || (b.updated || "").localeCompare(a.updated || ""));
-      const selected = activeJobs.find(job => job.id === currentJobId) || activeJobs[0];
+      const terminatedJobs = jobs.filter(job => job.status === "closed" && matchesSearch(job)).sort((a,b) => a.company.localeCompare(b.company, "zh-CN") || (b.updated || "").localeCompare(a.updated || ""));
+      const allJobs = [...activeJobs, ...terminatedJobs];
+      const selected = allJobs.find(job => job.id === currentJobId) || activeJobs[0] || terminatedJobs[0];
       if (selected) currentJobId = selected.id;
       if (!selected) return `${renderPageHeading("正在推进", "当前没有已投递的岗位。") }<div class="empty-state"><strong>还没有正在推进的岗位</strong>从「看看机会」中把已投递岗位移入这里。</div>`;
       const heading = renderPageHeading("正在推进", `跟进 ${activeJobs.length} 个已投递岗位，按最近一次进展整理。`, `<button class="button" data-action="open-add" data-mode="url">${icon("link","sm")}从网址录入</button><button class="button primary" data-action="open-add" data-mode="file">${icon("plus","sm")}添加岗位</button>`);
-      const list = activeJobs.length ? activeJobs.map(job => `
-        <button class="role-item ${job.id === selected.id ? "selected" : ""}" data-action="select-job" data-job-id="${escapeHtml(job.id)}" aria-pressed="${job.id === selected.id}">
+      const renderRoleItem = job => `
+        <button class="role-item ${job.status === "closed" ? "terminated" : ""} ${job.id === selected.id ? "selected" : ""}" data-action="select-job" data-job-id="${escapeHtml(job.id)}" aria-pressed="${job.id === selected.id}">
           <span class="company-mark ${escapeHtml(job.markTone)}">${escapeHtml(job.mark)}</span>
-          <span class="role-copy"><span class="role-company">${escapeHtml(job.company)}</span><span class="role-title">${escapeHtml(job.title)}</span><span class="role-meta"><span>${escapeHtml(job.updated)}</span><span class="role-stage">${escapeHtml(stageLabel(job))}</span></span></span>
-        </button>`).join("") : `<div class="empty-state">暂无岗位</div>`;
+          <span class="role-copy"><span class="role-company">${escapeHtml(job.company)}</span><span class="role-title">${escapeHtml(job.title)}</span><span class="role-meta"><span>${escapeHtml(job.updated)}</span><span class="role-stage ${job.status === "closed" ? "terminated" : ""}">${escapeHtml(stageLabel(job))}</span></span></span>
+        </button>`;
+      const list = activeJobs.length ? activeJobs.map(renderRoleItem).join("") : `<div class="inline-empty">暂无推进中的岗位</div>`;
+      const terminatedList = terminatedJobs.map(renderRoleItem).join("");
       const stageItems = stageNames.map((name, index) => {
         const state = index < selected.stageIndex ? "complete" : index === selected.stageIndex ? "current" : "";
         const node = index < selected.stageIndex ? icon("check") : "";
-        return `<div class="stage-item ${state}"><button class="stage-node" data-action="set-stage" data-stage="${index}" aria-label="${escapeHtml(name)}：${index < selected.stageIndex ? "已完成" : index === selected.stageIndex ? "当前阶段" : "未开始"}">${node}</button><span class="stage-label">${escapeHtml(name)}</span><span class="stage-foot">${index === selected.stageIndex ? `${escapeHtml(stageLabel(selected))}` : ""}</span></div>`;
+        return `<div class="stage-item ${state}"><button class="stage-node" ${selected.status === "closed" ? "disabled" : ""} data-action="set-stage" data-stage="${index}" aria-label="${escapeHtml(name)}：${index < selected.stageIndex ? "已完成" : index === selected.stageIndex ? "当前阶段" : "未开始"}">${node}</button><span class="stage-label">${escapeHtml(name)}</span><span class="stage-foot">${index === selected.stageIndex ? `${escapeHtml(stageLabel(selected))}` : ""}</span></div>`;
       }).join("");
       const roundButtons = rounds.map(round => {
         const session = getSession(selected, round.id);
@@ -712,13 +753,18 @@
       }).join("");
       const activity = selected.activity.map((item, index) => `<div class="activity-row"><span class="activity-bullet"></span><span>${escapeHtml(item)}<span class="activity-time">${isDesktop ? "" : index === 0 ? escapeHtml(selected.updated) : ""}</span></span></div>`).join("");
       const tags = selected.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
+      const terminateButton = selected.status === "applied"
+        ? `<button class="button danger small" data-action="terminate-job" data-job-id="${escapeHtml(selected.id)}">${icon("close","sm")}终止流程</button>`
+        : "";
       return `${heading}
         <div class="quick-stats" aria-label="进度概览"><div class="stat"><strong class="coral">${activeJobs.length}</strong><span>推进中岗位</span></div><div class="stat"><strong>${weekInterviews()}</strong><span>本周面试</span></div><div class="stat"><strong class="green">${jobs.reduce((count, job) => count + Object.values(job.sessions).filter(session => session.questions.length).length,0)}</strong><span>已归档轮次</span></div></div>
         <div class="workspace">
-          <section class="role-list" aria-label="已投递岗位"><div class="list-head"><strong>已投递岗位</strong><span>${activeJobs.length} 个岗位</span></div>${list}</section>
+          <section class="role-list" aria-label="岗位列表"><div class="list-head"><strong>推进中</strong><span>${activeJobs.length} 个岗位</span></div>${list}${terminatedJobs.length ? `<div class="list-head"><strong>已终止</strong><span>${terminatedJobs.length} 个岗位</span></div>${terminatedList}` : ""}</section>
           <section class="detail-sheet" aria-label="岗位流程详情">
             <div class="detail-head"><div class="company-title"><span class="company-mark ${escapeHtml(selected.markTone)}">${escapeHtml(selected.mark)}</span><div><div class="company-name">${escapeHtml(selected.company)} · ${escapeHtml(selected.team)}</div><div class="job-title">${escapeHtml(selected.title)}</div><div class="job-inline-meta"><span class="inline-meta">${icon("location")} ${escapeHtml(selected.city)}</span><span class="inline-meta">${icon("calendar")} 投递于 ${fmtDate(selected.appliedAt)}</span><span class="badge">${escapeHtml(stageLabel(selected))}</span></div><div class="job-detail-tools"><button class="button small" data-action="show-job-jd" data-job-id="${escapeHtml(selected.id)}">查看岗位 JD ${icon("arrow","sm")}</button></div></div></div><div class="detail-tools"><button class="icon-action" data-action="delete-job" data-job-id="${escapeHtml(selected.id)}" aria-label="删除岗位" title="删除岗位">${icon("trash","sm")}</button><button class="icon-button" data-action="open-add" aria-label="新增岗位">${icon("more")}</button></div></div>
+            ${terminateButton ? `<div class="flow-action-row">${terminateButton}</div>` : ""}
             <div class="stage-block"><div class="section-line"><h2>招聘进度</h2><span class="subtle">最近更新 · ${escapeHtml(selected.updated)}</span></div><div class="stage-rail" role="group" aria-label="招聘流程阶段">${stageItems}</div></div>
+            ${selected.status === "closed" ? `<div class="termination-note">${icon("close","sm")} 流程已终止；岗位信息和面试记录已保留。</div>` : ""}
             <div class="round-block"><div class="round-heading"><h2>面试轮次</h2><span>选择节点，记录本轮题目与回答</span></div><div class="round-controls" role="group" aria-label="面试轮次">${roundButtons}</div><div class="round-note">${icon("clock")} 当前进度：${escapeHtml(stageLabel(selected))}</div></div>
             <div class="detail-lower"><section class="lower-section"><h3 class="lower-title">岗位摘要</h3><div class="jd-snippet">${escapeHtml(selected.jd)}</div><div class="tag-row">${tags}</div></section><section class="lower-section"><h3 class="lower-title">最近动态</h3><div class="activity">${activity}</div></section></div>
           </section>
@@ -784,6 +830,41 @@
       }).join("");
       const qa = session.questions.map((item, index) => `<article class="archive-pair"><div class="archive-cell"><div class="archive-label">题目 ${String(index + 1).padStart(2,"0")}</div><div class="archive-text">${escapeHtml(item.question || "未填写题目")}</div></div><div class="archive-cell"><div class="archive-label">回答</div><div class="archive-text">${escapeHtml(item.answer || "尚未记录回答")}</div></div></article>`).join("");
       return `${heading}<div class="archive-layout"><aside class="archive-tree" aria-label="面试归档目录"><div class="tree-heading"><span>归档目录</span><span>${sessions.length} 轮</span></div>${tree || `<div class="empty-state">还没有面试复盘</div>`}</aside><section class="archive-content"><div class="archive-title"><div><h2>${escapeHtml(selectedJob.company)} · ${escapeHtml(selectedJob.title)}</h2><p>${escapeHtml(selectedRound.label)} · ${fmtDate(session.date)} · ${escapeHtml(session.result || "待安排")}</p></div><button class="button small" data-action="edit-archive" data-job-id="${escapeHtml(selectedJob.id)}" data-round="${selectedRound.id}">编辑复盘 ${icon("arrow","sm")}</button></div><div class="archive-qa">${qa || `<div class="empty-state"><strong>这一轮还没有记录</strong>打开复盘编辑器，补充题目和回答。</div>`}</div></section></div>`;
+    }
+
+    function renderKnowledge() {
+      const documents = knowledgeDocuments.filter(document =>
+        `${document.category} ${document.title} ${document.content}`.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase())
+      );
+      const selected = documents.find(document => document.id === selectedKnowledgeId) || documents[0];
+      if (selected) selectedKnowledgeId = selected.id;
+      const categories = [...new Set(documents.map(document => document.category || "未分类"))].sort((a,b) => a.localeCompare(b, "zh-CN"));
+      const tree = categories.map(category => {
+        const items = documents.filter(document => (document.category || "未分类") === category);
+        return `<div class="tree-company">${icon("folder","sm")}<span>${escapeHtml(category)}</span></div>${items.map(document => `
+          <button class="tree-job ${document.id === selected?.id ? "selected" : ""}" data-action="select-knowledge" data-document-id="${escapeHtml(document.id)}">
+            ${icon("chevron","sm")}<span>${escapeHtml(document.title)}</span>
+          </button>`).join("")}`;
+      }).join("");
+      const createButton = `<button class="button primary" data-action="create-knowledge">${icon("plus","sm")}新建文档</button>`;
+      const heading = renderPageHeading("知识积累", `${knowledgeDocuments.length} 篇个人知识文档。按分类整理，独立于面试复盘。`, createButton);
+      if (!selected) return `${heading}<div class="detail-sheet knowledge-empty"><div class="empty-state"><strong>还没有知识文档</strong><button class="button primary small" data-action="create-knowledge">${icon("plus","sm")}新建文档</button></div></div>`;
+      return `${heading}<div class="archive-layout">
+        <aside class="archive-tree" aria-label="知识分类目录">
+          <div class="tree-heading"><span>知识目录</span><span>${documents.length} 篇</span></div>
+          ${tree || `<div class="inline-empty">没有匹配文档</div>`}
+        </aside>
+        <section class="archive-content knowledge-content">
+          <div class="archive-title">
+            <div class="knowledge-title-wrap"><label for="knowledge-title">文档标题<input id="knowledge-title" value="${escapeHtml(selected.title)}" maxlength="160"></label><p>最近保存 · ${fmtDate((selected.updatedAt || "").slice(0,10))}</p></div>
+            <div class="knowledge-actions"><button class="button primary small" data-action="save-knowledge">${icon("save","sm")}保存</button><button class="icon-action" data-action="delete-knowledge" aria-label="删除知识文档" title="删除知识文档">${icon("trash","sm")}</button></div>
+          </div>
+          <div class="knowledge-fields"><label for="knowledge-category">所属分类<input id="knowledge-category" value="${escapeHtml(selected.category || "未分类")}" maxlength="120"></label></div>
+          <label class="sr-only" for="knowledge-content">文档正文</label>
+          <textarea id="knowledge-content" class="knowledge-body" placeholder="记录技术概念、项目经验或需要持续整理的内容……">${escapeHtml(selected.content)}</textarea>
+          <div class="resume-editor-foot"><span>仅保存在本机知识文档中</span><span>${selected.content.length} 字符</span></div>
+        </section>
+      </div>`;
     }
 
     function renderInterviewEditor() {
@@ -882,6 +963,91 @@
       setView("pipeline");
       showToast(`${source.company} · ${source.title} 已移入「正在推进」`);
     }
+    async function persistKnowledgeDocument(notify = false) {
+      const document = knowledgeDocuments.find(item => item.id === selectedKnowledgeId);
+      const titleInput = $("#knowledge-title");
+      const categoryInput = $("#knowledge-category");
+      const contentInput = $("#knowledge-content");
+      if (!document || !titleInput || !categoryInput || !contentInput) return false;
+      const title = titleInput.value.trim();
+      const category = categoryInput.value.trim() || "未分类";
+      const content = contentInput.value;
+      if (!title) {
+        if (notify) showToast("文档标题不能为空");
+        return false;
+      }
+      const changed = title !== document.title || category !== document.category || content !== document.content;
+      if (!changed) {
+        if (notify) showToast("知识文档已保存");
+        return true;
+      }
+      document.title = title;
+      document.category = category;
+      document.content = content;
+      try {
+        if (isDesktop) {
+          await desktopInvoke("save_knowledge_document", {
+            documentId: document.id,
+            category: document.category,
+            title: document.title,
+            content: document.content,
+          });
+        }
+        document.updatedAt = new Date().toISOString();
+        if (!isDesktop) localStorage.setItem("campus-knowledge-documents", JSON.stringify(knowledgeDocuments));
+        if (notify) {
+          render();
+          showToast("知识文档已保存");
+        }
+        return true;
+      } catch (error) {
+        showToast(`知识文档未保存：${String(error)}`);
+        return false;
+      }
+    }
+
+    async function createKnowledgeDocument() {
+      if (selectedKnowledgeId && $("#knowledge-title") && !(await persistKnowledgeDocument(false))) return;
+      try {
+        let id;
+        if (isDesktop) {
+          id = await desktopInvoke("create_knowledge_document", { category: "未分类", title: "新建文档" });
+          selectedKnowledgeId = id;
+          await refreshNativeData();
+        } else {
+          id = `knowledge-${Date.now()}`;
+          knowledgeDocuments.unshift({ id, category: "未分类", title: "新建文档", content: "", updatedAt: new Date().toISOString() });
+          selectedKnowledgeId = id;
+          localStorage.setItem("campus-knowledge-documents", JSON.stringify(knowledgeDocuments));
+          render();
+        }
+        setView("knowledge");
+        $("#knowledge-title")?.focus();
+      } catch (error) {
+        showToast(`知识文档未创建：${String(error)}`);
+      }
+    }
+
+    async function deleteKnowledgeDocument() {
+      const document = knowledgeDocuments.find(item => item.id === selectedKnowledgeId);
+      if (!document || !window.confirm(`删除知识文档「${document.title}」？`)) return;
+      try {
+        if (isDesktop) {
+          await desktopInvoke("delete_knowledge_document", { documentId: document.id });
+          selectedKnowledgeId = null;
+          await refreshNativeData();
+        } else {
+          knowledgeDocuments = knowledgeDocuments.filter(item => item.id !== document.id);
+          selectedKnowledgeId = knowledgeDocuments[0]?.id || null;
+          localStorage.setItem("campus-knowledge-documents", JSON.stringify(knowledgeDocuments));
+          render();
+        }
+        showToast("知识文档已删除");
+      } catch (error) {
+        showToast(`知识文档未删除：${String(error)}`);
+      }
+    }
+
     async function persistResumeEditor(notify = false) {
       const resume = resumes.find(item => item.id === selectedResumeId);
       if (!resume || !$("#resume-content")) return false;
@@ -917,6 +1083,26 @@
         if (activeView === "job-detail") setView(jobDetailReturnView);
         showToast("岗位及相关面试记录已删除");
       } catch (error) { showToast(`岗位未删除：${String(error)}`); }
+    }
+    async function terminateJob(id) {
+      const job = getJob(id);
+      if (!job || job.status !== "applied") return;
+      if (!window.confirm(`确认将「${job.company} · ${job.title}」标记为终止流程？岗位信息和面试记录会保留。`)) return;
+      try {
+        if (isDesktop) {
+          await desktopInvoke("terminate_job", { jobId: id });
+          await refreshNativeData();
+        } else {
+          job.status = "closed";
+          job.updated = "刚刚";
+          job.activity.unshift("流程已终止");
+          job.activity = job.activity.slice(0, 3);
+          render();
+        }
+        showToast(`${job.company} · ${job.title} 流程已终止，岗位和面试记录已保留`);
+      } catch (error) {
+        showToast(`流程未终止：${String(error)}`);
+      }
     }
     async function openJobUrl(id) {
       const job = getAnyJob(id);
@@ -963,6 +1149,10 @@
       if (event.target.id === "resume-name") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.name = event.target.value; }
       if (event.target.id === "resume-target-role") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.targetRole = event.target.value; }
       if (event.target.id === "resume-content") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.content = event.target.value; }
+      if (event.target.matches("#knowledge-title, #knowledge-category, #knowledge-content")) {
+        clearTimeout(knowledgeSaveTimer);
+        knowledgeSaveTimer = setTimeout(() => persistKnowledgeDocument(false), 900);
+      }
       if (event.target.matches("#resume-name, #resume-target-role, #resume-content")) {
         clearTimeout(resumeSaveTimer);
         resumeSaveTimer = setTimeout(() => persistResumeEditor(false), 900);
@@ -977,6 +1167,14 @@
       const button = event.target.closest("[data-action]");
       if (!button) return;
       const action = button.dataset.action;
+      if (action === "create-knowledge") { await createKnowledgeDocument(); return; }
+      if (action === "select-knowledge") {
+        await persistKnowledgeDocument(false);
+        selectedKnowledgeId = button.dataset.documentId;
+        render(); return;
+      }
+      if (action === "save-knowledge") { await persistKnowledgeDocument(true); return; }
+      if (action === "delete-knowledge") { await deleteKnowledgeDocument(); return; }
       if (action === "open-add") { openAddDialog(button.dataset.mode || "file"); return; }
       if (action === "close-dialog") { $("#add-dialog").close(); return; }
       if (action === "pick-file") {
@@ -1023,6 +1221,7 @@
       if (action === "back-to-job-list") { setView(jobDetailReturnView); return; }
       if (action === "open-job-url") { await openJobUrl(button.dataset.jobId); return; }
       if (action === "delete-job") { await deleteJob(button.dataset.jobId); return; }
+      if (action === "terminate-job") { await terminateJob(button.dataset.jobId); return; }
       if (action === "set-stage") {
         const job = getJob(currentJobId); if (!job) return;
         const nextStage = Number(button.dataset.stage);
@@ -1123,6 +1322,11 @@
 
     $("#global-search").addEventListener("input", event => {
       searchQuery = event.target.value;
+      if (activeView === "knowledge") {
+        clearTimeout(knowledgeSaveTimer);
+        persistKnowledgeDocument(false).then(() => render());
+        return;
+      }
       if (activeView !== "interview" && activeView !== "resumes") render();
     });
     document.addEventListener("change", event => {

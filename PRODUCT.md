@@ -15,6 +15,8 @@ One job seeker who repeatedly captures job descriptions, tracks several applicat
 - Track application milestones and the latest activity date.
 - Open a first-round, second-round, third-round, or HR interview record from its application stage.
 - Review saved interview sessions grouped by company, role, and round.
+- Keep standalone knowledge documents grouped by category, separate from interview records.
+- Mark an application as terminated without deleting the role or its interview history.
 - Edit local copies of role-specific resumes and export them to Word or PDF.
 
 ## Product Constraints
@@ -23,4 +25,4 @@ One job seeker who repeatedly captures job descriptions, tracks several applicat
 - Imported or scraped details remain editable and require user confirmation before saving.
 - Original imported resume files remain on this device; edited resume text is stored locally.
 - Missing publication dates stay unknown; the application never invents them.
-- The Tauri desktop app provides file import, public-page previews, and SQLite persistence. The browser preview uses sample data and does not persist records.
+- The Tauri desktop app provides file import, public-page previews, and SQLite persistence. The browser preview uses sample role data; knowledge documents are stored in that browser's local storage.

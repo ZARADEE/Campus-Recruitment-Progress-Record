@@ -1,9 +1,11 @@
 use crate::database::AppState;
 use crate::importer;
-use crate::models::{InterviewQuestion, InterviewSession, JobDraft, JobRecord};
+use crate::models::{
+    InterviewQuestion, InterviewSession, JobDraft, JobRecord, KnowledgeDocument,
+};
 use crate::scraper_service;
 use chrono::{DateTime, Local, Utc};
-use rusqlite::{params, OptionalExtension, Transaction};
+use rusqlite::{params, Connection, OptionalExtension, Transaction};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Write;
@@ -297,6 +299,7 @@ fn load_activity(connection: &rusqlite::Connection, job_id: &str) -> Result<Vec<
                 .map(|name| format!("进度更新至{name}"))
                 .unwrap_or_else(|| "招聘进度已更新".into()),
             "interview_saved" => "面试复盘已保存".to_string(),
+            "closed" => "招聘流程已终止".to_string(),
             _ => note,
         };
         activity.push(format!("{} · {}", label, local_datetime(Some(occurred_at))));
@@ -432,6 +435,30 @@ pub fn mark_job_applied(state: State<'_, AppState>, job_id: String) -> Result<()
         return Err("岗位不存在或已投递".into());
     }
     insert_event(&tx, &job_id, "applied", None, Some(0), &timestamp, "")?;
+    tx.commit().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn terminate_job(state: State<'_, AppState>, job_id: String) -> Result<(), String> {
+    let connection = state.db.lock().map_err(|_| "数据库锁定失败")?;
+    terminate_job_record(&connection, &job_id)
+}
+
+fn terminate_job_record(connection: &Connection, job_id: &str) -> Result<(), String> {
+    let tx = connection
+        .unchecked_transaction()
+        .map_err(|error| error.to_string())?;
+    let timestamp = now();
+    let changed = tx
+        .execute(
+            "UPDATE jobs SET status='closed', last_activity_at=?2, updated_at=?2 WHERE id=?1 AND status='applied'",
+            params![job_id, timestamp],
+        )
+        .map_err(|error| error.to_string())?;
+    if changed == 0 {
+        return Err("正在推进的岗位不存在或已终止".into());
+    }
+    insert_event(&tx, job_id, "closed", None, None, &timestamp, "流程已终止")?;
     tx.commit().map_err(|error| error.to_string())
 }
 
@@ -598,6 +625,115 @@ pub fn delete_job(state: State<'_, AppState>, job_id: String) -> Result<(), Stri
         return Err("岗位已不存在".into());
     }
     tx.commit().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn list_knowledge_documents(
+    state: State<'_, AppState>,
+) -> Result<Vec<KnowledgeDocument>, String> {
+    let connection = state.db.lock().map_err(|_| "数据库锁定失败")?;
+    let mut statement = connection
+        .prepare(
+            "SELECT id, category, title, content, updated_at
+             FROM knowledge_documents
+             ORDER BY category COLLATE NOCASE, title COLLATE NOCASE, created_at",
+        )
+        .map_err(|error| error.to_string())?;
+    let documents = statement
+        .query_map([], |row| {
+            Ok(KnowledgeDocument {
+                id: row.get(0)?,
+                category: row.get(1)?,
+                title: row.get(2)?,
+                content: row.get(3)?,
+                updated_at: row.get(4)?,
+            })
+        })
+        .map_err(|error| error.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| error.to_string())?;
+    Ok(documents)
+}
+
+#[tauri::command]
+pub fn create_knowledge_document(
+    state: State<'_, AppState>,
+    category: String,
+    title: String,
+) -> Result<String, String> {
+    let category = category.trim();
+    let title = title.trim();
+    if title.is_empty() || title.chars().count() > 160 {
+        return Err("文档标题不能为空且不能超过 160 个字符".into());
+    }
+    if category.chars().count() > 120 {
+        return Err("分类名称不能超过 120 个字符".into());
+    }
+    let category = if category.is_empty() { "未分类" } else { category };
+    let id = Uuid::new_v4().to_string();
+    let timestamp = now();
+    let connection = state.db.lock().map_err(|_| "数据库锁定失败")?;
+    connection
+        .execute(
+            "INSERT INTO knowledge_documents(id, category, title, content, created_at, updated_at)
+             VALUES (?1, ?2, ?3, '', ?4, ?4)",
+            params![id, category, title, timestamp],
+        )
+        .map_err(|error| error.to_string())?;
+    Ok(id)
+}
+
+#[tauri::command]
+pub fn save_knowledge_document(
+    state: State<'_, AppState>,
+    document_id: String,
+    category: String,
+    title: String,
+    content: String,
+) -> Result<(), String> {
+    let category = category.trim();
+    let title = title.trim();
+    if title.is_empty() || title.chars().count() > 160 {
+        return Err("文档标题不能为空且不能超过 160 个字符".into());
+    }
+    if category.chars().count() > 120 {
+        return Err("分类名称不能超过 120 个字符".into());
+    }
+    if content.len() > 2_000_000 {
+        return Err("文档内容不能超过 2 MB".into());
+    }
+    let category = if category.is_empty() { "未分类" } else { category };
+    let connection = state.db.lock().map_err(|_| "数据库锁定失败")?;
+    let changed = connection
+        .execute(
+            "UPDATE knowledge_documents
+             SET category=?2, title=?3, content=?4, updated_at=?5
+             WHERE id=?1",
+            params![document_id, category, title, content, now()],
+        )
+        .map_err(|error| error.to_string())?;
+    if changed == 0 {
+        return Err("知识文档已不存在".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_knowledge_document(
+    state: State<'_, AppState>,
+    document_id: String,
+) -> Result<(), String> {
+    let connection = state.db.lock().map_err(|_| "数据库锁定失败")?;
+    let changed = connection
+        .execute(
+            "DELETE FROM knowledge_documents WHERE id=?1",
+            [&document_id],
+        )
+        .map_err(|error| error.to_string())?;
+    if changed == 0 {
+        return Err("知识文档已不存在".into());
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -899,8 +1035,9 @@ pub async fn preview_job_url(url: String) -> Result<JobDraft, String> {
 
 #[cfg(test)]
 mod resume_tests {
-    use super::resume_docx;
+    use super::{resume_docx, terminate_job_record};
     use std::io::Read;
+    use rusqlite::Connection;
     use zip::ZipArchive;
 
     #[test]
@@ -921,5 +1058,63 @@ mod resume_tests {
     #[test]
     fn empty_resume_cannot_be_exported() {
         assert!(resume_docx("\n  \n").is_err());
+    }
+
+    #[test]
+    fn terminating_job_preserves_its_stage_and_interview_records() {
+        let connection = Connection::open_in_memory().unwrap();
+        connection
+            .execute_batch(
+                "CREATE TABLE jobs (
+                    id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL CHECK(status IN ('opportunity', 'applied', 'closed')),
+                    current_stage INTEGER NOT NULL,
+                    last_activity_at TEXT,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE job_events (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    from_stage INTEGER,
+                    to_stage INTEGER,
+                    occurred_at TEXT NOT NULL,
+                    note TEXT NOT NULL DEFAULT ''
+                );
+                CREATE TABLE interview_sessions (id TEXT PRIMARY KEY, job_id TEXT NOT NULL);
+                INSERT INTO jobs(id, status, current_stage, updated_at) VALUES ('job-1', 'applied', 3, 'old');
+                INSERT INTO interview_sessions(id, job_id) VALUES ('session-1', 'job-1');",
+            )
+            .unwrap();
+
+        terminate_job_record(&connection, "job-1").unwrap();
+
+        let (status, stage): (String, i64) = connection
+            .query_row(
+                "SELECT status, current_stage FROM jobs WHERE id='job-1'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        let session_count: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM interview_sessions WHERE job_id='job-1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let event: (String, String) = connection
+            .query_row(
+                "SELECT event_type, note FROM job_events WHERE job_id='job-1'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+
+        assert_eq!(status, "closed");
+        assert_eq!(stage, 3);
+        assert_eq!(session_count, 1);
+        assert_eq!(event, ("closed".into(), "流程已终止".into()));
+        assert!(terminate_job_record(&connection, "job-1").is_err());
     }
 }
