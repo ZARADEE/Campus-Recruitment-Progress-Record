@@ -106,9 +106,72 @@ impl AppState {
                 ",
             )
             .map_err(|error| error.to_string())?;
+        let has_interview_time: bool = connection
+            .query_row("SELECT EXISTS(SELECT 1 FROM pragma_table_info('interview_sessions') WHERE name='interview_time')", [], |row| row.get(0))
+            .map_err(|error| error.to_string())?;
+        if !has_interview_time {
+            connection.execute("ALTER TABLE interview_sessions ADD COLUMN interview_time TEXT NOT NULL DEFAULT ''", [])
+                .map_err(|error| error.to_string())?;
+        }
+        let has_exam_at: bool = connection
+            .query_row("SELECT EXISTS(SELECT 1 FROM pragma_table_info('jobs') WHERE name='exam_at')", [], |row| row.get(0))
+            .map_err(|error| error.to_string())?;
+        if !has_exam_at {
+            connection.execute("ALTER TABLE jobs ADD COLUMN exam_at TEXT NOT NULL DEFAULT ''", [])
+                .map_err(|error| error.to_string())?;
+        }
         Ok(Self {
             db: Mutex::new(connection),
             data_dir: path.parent().unwrap_or(Path::new(".")).to_path_buf(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AppState;
+    use rusqlite::Connection;
+    use std::path::PathBuf;
+    use uuid::Uuid;
+
+    fn has_interview_time(path: &PathBuf) -> bool {
+        let connection = Connection::open(path).unwrap();
+        connection
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM pragma_table_info('interview_sessions') WHERE name='interview_time')",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap()
+    }
+
+    #[test]
+    fn adds_interview_time_to_existing_database_idempotently() {
+        let path = std::env::temp_dir().join(format!("campus-interview-time-{}.sqlite", Uuid::new_v4()));
+        let legacy = Connection::open(&path).unwrap();
+        legacy
+            .execute_batch(
+                "CREATE TABLE interview_sessions (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    job_id TEXT NOT NULL,
+                    round_type TEXT NOT NULL,
+                    interview_date TEXT NOT NULL DEFAULT '',
+                    result TEXT NOT NULL DEFAULT '',
+                    summary TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(job_id, round_type)
+                );",
+            )
+            .unwrap();
+        drop(legacy);
+
+        let first_open = AppState::open(&path).unwrap();
+        drop(first_open);
+        assert!(has_interview_time(&path));
+
+        let second_open = AppState::open(&path).unwrap();
+        drop(second_open);
+        assert!(has_interview_time(&path));
+        std::fs::remove_file(path).unwrap();
     }
 }

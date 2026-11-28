@@ -20,7 +20,7 @@ A local-first Windows desktop app for capturing job openings, tracking applicati
 - Group roles by company and follow applications through assessment, interviews, offers, and onboarding.
 - Organize first, second, third, and HR interview questions, answers, outcomes, and notes.
 - Mark an application as terminated while retaining its role and interview records.
-- Keep technical notes and personal references in a categorized knowledge area separate from interview records.
+- Write knowledge documents with heading outlines, nested categories and lists, tasks, tables, code blocks, and resizable images. Insert images by choosing files, pasting, or dragging; notes support autosave, undo/redo, and a focused writing view.
 - Edit role-specific resumes and export them to Word or PDF.
 - Confirm before deleting a role and its associated progress and interview records.
 

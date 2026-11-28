@@ -31,6 +31,7 @@ pub fn run() {
             commands::mark_job_applied,
             commands::terminate_job,
             commands::update_job_stage,
+            commands::save_exam_time,
             commands::save_interview_session,
             commands::delete_job,
             commands::list_knowledge_documents,

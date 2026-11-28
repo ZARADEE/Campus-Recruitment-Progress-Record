@@ -36,6 +36,8 @@ pub struct InterviewDraft {
     #[serde(default)]
     pub date: String,
     #[serde(default)]
+    pub time: String,
+    #[serde(default)]
     pub result: String,
     #[serde(default)]
     pub summary: String,
@@ -174,7 +176,7 @@ pub fn list_jobs(state: State<'_, AppState>) -> Result<Vec<JobRecord>, String> {
         .prepare(
             "SELECT j.id, c.name, j.title, j.status, j.published_at, j.created_at, j.applied_at,
                     j.last_activity_at, j.current_stage, j.active_round, j.source_url, j.source_kind,
-                    j.city, j.team, j.salary, j.tags_json, j.jd_text
+                    j.city, j.team, j.salary, j.tags_json, j.jd_text, j.exam_at
              FROM jobs j JOIN companies c ON c.id = j.company_id
              ORDER BY CASE j.status WHEN 'applied' THEN 0 WHEN 'opportunity' THEN 1 ELSE 2 END,
                       COALESCE(j.last_activity_at, j.created_at) DESC",
@@ -200,6 +202,7 @@ pub fn list_jobs(state: State<'_, AppState>) -> Result<Vec<JobRecord>, String> {
                 row.get::<_, String>(14)?,
                 row.get::<_, String>(15)?,
                 row.get::<_, String>(16)?,
+                row.get::<_, String>(17)?,
             ))
         })
         .map_err(|error| error.to_string())?;
@@ -229,6 +232,7 @@ pub fn list_jobs(state: State<'_, AppState>) -> Result<Vec<JobRecord>, String> {
                 salary,
                 tags_json,
                 jd,
+                exam_at,
             ) = raw;
             let created = created_at.chars().take(10).collect();
             let updated = local_datetime(last_activity_at.clone());
@@ -247,6 +251,7 @@ pub fn list_jobs(state: State<'_, AppState>) -> Result<Vec<JobRecord>, String> {
                 updated,
                 stage_index: stage_index.clamp(0, 7) as usize,
                 active_round,
+                exam_at,
                 source: source_label(&source_kind_value),
                 source_url,
                 city,
@@ -299,7 +304,7 @@ fn load_activity(connection: &rusqlite::Connection, job_id: &str) -> Result<Vec<
                 .map(|name| format!("进度更新至{name}"))
                 .unwrap_or_else(|| "招聘进度已更新".into()),
             "interview_saved" => "面试复盘已保存".to_string(),
-            "closed" => "招聘流程已终止".to_string(),
+            "closed" => "已拒绝，招聘流程已终止".to_string(),
             _ => note,
         };
         activity.push(format!("{} · {}", label, local_datetime(Some(occurred_at))));
@@ -312,7 +317,7 @@ fn load_sessions(
     job_id: &str,
 ) -> Result<HashMap<String, InterviewSession>, String> {
     let mut statement = connection
-        .prepare("SELECT id, round_type, interview_date, result, summary FROM interview_sessions WHERE job_id = ?1")
+        .prepare("SELECT id, round_type, interview_date, result, summary, interview_time FROM interview_sessions WHERE job_id = ?1")
         .map_err(|error| error.to_string())?;
     let rows = statement
         .query_map([job_id], |row| {
@@ -322,12 +327,13 @@ fn load_sessions(
                 row.get::<_, String>(2)?,
                 row.get::<_, String>(3)?,
                 row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
             ))
         })
         .map_err(|error| error.to_string())?;
     let mut sessions = HashMap::new();
     for row in rows {
-        let (session_id, round, date, result, summary) = row.map_err(|error| error.to_string())?;
+        let (session_id, round, date, result, summary, time) = row.map_err(|error| error.to_string())?;
         let mut question_statement = connection
             .prepare("SELECT id, question_text, answer_text FROM interview_questions WHERE session_id = ?1 ORDER BY sort_order")
             .map_err(|error| error.to_string())?;
@@ -347,6 +353,7 @@ fn load_sessions(
             round,
             InterviewSession {
                 date,
+                time,
                 result,
                 summary,
                 questions,
@@ -396,8 +403,8 @@ fn insert_job(tx: &Transaction<'_>, draft: &JobDraft, timestamp: &str) -> Result
     let tags = serde_json::to_string(&draft.tags).map_err(|error| error.to_string())?;
     tx.execute(
         "INSERT INTO jobs(id, company_id, title, status, published_at, created_at, current_stage,
-                          source_url, source_kind, city, team, salary, tags_json, jd_text, updated_at)
-         VALUES (?1, ?2, ?3, 'opportunity', ?4, ?5, 0, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?5)",
+                          source_url, source_kind, city, team, salary, tags_json, jd_text, updated_at, exam_at)
+         VALUES (?1, ?2, ?3, 'opportunity', ?4, ?5, 0, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?5, '')",
         params![
             id,
             company_id,
@@ -458,7 +465,7 @@ fn terminate_job_record(connection: &Connection, job_id: &str) -> Result<(), Str
     if changed == 0 {
         return Err("正在推进的岗位不存在或已终止".into());
     }
-    insert_event(&tx, job_id, "closed", None, None, &timestamp, "流程已终止")?;
+    insert_event(&tx, job_id, "closed", None, None, &timestamp, "已拒绝")?;
     tx.commit().map_err(|error| error.to_string())
 }
 
@@ -503,6 +510,39 @@ pub fn update_job_stage(
 }
 
 #[tauri::command]
+pub fn save_exam_time(
+    state: State<'_, AppState>,
+    job_id: String,
+    date: String,
+    time: String,
+) -> Result<(), String> {
+    if date.is_empty() != time.is_empty() {
+        return Err("请同时填写笔试日期和时间，或全部清空".into());
+    }
+    if !date.is_empty() && chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d").is_err() {
+        return Err("笔试日期无效".into());
+    }
+    if !time.is_empty()
+        && (time.len() != 5 || chrono::NaiveTime::parse_from_str(&time, "%H:%M").is_err())
+    {
+        return Err("笔试时间无效，请使用 HH:MM".into());
+    }
+    let exam_at = if date.is_empty() { String::new() } else { format!("{date}T{time}") };
+    let connection = state.db.lock().map_err(|_| "数据库锁定失败")?;
+    let timestamp = now();
+    let changed = connection
+        .execute(
+            "UPDATE jobs SET exam_at=?2, last_activity_at=?3, updated_at=?3 WHERE id=?1 AND status='applied'",
+            params![job_id, exam_at, timestamp],
+        )
+        .map_err(|error| error.to_string())?;
+    if changed == 0 {
+        return Err("对应的已投递岗位不存在".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub fn save_interview_session(
     state: State<'_, AppState>,
     session: InterviewDraft,
@@ -517,6 +557,12 @@ pub fn save_interview_session(
     }
     if session.summary.len() > 500_000 {
         return Err("面试总结过长".into());
+    }
+    if !session.time.is_empty()
+        && (session.date.is_empty() || session.time.len() != 5
+            || chrono::NaiveTime::parse_from_str(&session.time, "%H:%M").is_err())
+    {
+        return Err("请填写有效的面试日期和时间（HH:MM）".into());
     }
     if !["进行中", "待安排", "通过", "待反馈", "未通过"].contains(&session.result.as_str())
     {
@@ -557,11 +603,11 @@ pub fn save_interview_session(
         .map_err(|error| error.to_string())?;
     let session_id = session_id.unwrap_or_else(|| Uuid::new_v4().to_string());
     tx.execute(
-        "INSERT INTO interview_sessions(id, job_id, round_type, interview_date, result, summary, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+        "INSERT INTO interview_sessions(id, job_id, round_type, interview_date, result, summary, updated_at, interview_time)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
          ON CONFLICT(job_id, round_type) DO UPDATE SET interview_date=excluded.interview_date,
-             result=excluded.result, summary=excluded.summary, updated_at=excluded.updated_at",
-        params![session_id, session.job_id, session.round_type, session.date, session.result, session.summary, timestamp],
+             interview_time=excluded.interview_time, result=excluded.result, summary=excluded.summary, updated_at=excluded.updated_at",
+        params![session_id, session.job_id, session.round_type, session.date, session.result, session.summary, timestamp, session.time],
     )
     .map_err(|error| error.to_string())?;
     let mut existing_ids = Vec::new();
@@ -699,8 +745,8 @@ pub fn save_knowledge_document(
     if category.chars().count() > 120 {
         return Err("分类名称不能超过 120 个字符".into());
     }
-    if content.len() > 2_000_000 {
-        return Err("文档内容不能超过 2 MB".into());
+    if content.len() > 24 * 1024 * 1024 {
+        return Err("文档内容不能超过 24 MB，请减少图片或缩小图片".into());
     }
     let category = if category.is_empty() { "未分类" } else { category };
     let connection = state.db.lock().map_err(|_| "数据库锁定失败")?;
@@ -1114,7 +1160,7 @@ mod resume_tests {
         assert_eq!(status, "closed");
         assert_eq!(stage, 3);
         assert_eq!(session_count, 1);
-        assert_eq!(event, ("closed".into(), "流程已终止".into()));
+        assert_eq!(event, ("closed".into(), "已拒绝".into()));
         assert!(terminate_job_record(&connection, "job-1").is_err());
     }
 }

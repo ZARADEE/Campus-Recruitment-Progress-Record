@@ -99,6 +99,14 @@
     .stat span { color: var(--muted); font-size: 11px; }
     .stat .coral { color: var(--coral); }
     .stat .green { color: var(--green); }
+    .interview-reminder { margin: 0 0 18px; padding: 14px 17px; border: 1px solid #d8ded8; border-left: 4px solid var(--coral); background: #fffdf9; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .interview-reminder-copy { min-width: 0; display: grid; gap: 5px; }
+    .interview-reminder-label { color: #a33a37; font-size: 10px; font-weight: 750; letter-spacing: .04em; }
+    .interview-reminder-title { color: var(--ink); font-size: 13px; font-weight: 700; }
+    .interview-reminder-meta { color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .interview-reminder-time { color: #8a302e; font-size: 14px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .interview-reminder-empty { border-left-color: #9aa69e; background: #f8faf7; }
+    .interview-reminder-empty .interview-reminder-label { color: var(--muted); }
     .workspace { display: grid; grid-template-columns: var(--list-width) minmax(0,1fr); align-items: start; gap: 20px; }
     .role-list { min-width: 0; background: var(--paper); border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
     .list-head { min-height: 52px; padding: 0 15px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -156,7 +164,6 @@
     .stage-item.complete .stage-label, .stage-item.current .stage-label { color: #a33936; font-weight: 700; }
     .stage-foot { height: 16px; margin-top: 4px; color: #a33936; font-size: 9px; white-space: nowrap; }
     .termination-note { padding: 10px 22px; border-bottom: 1px solid var(--rule); color: #87413c; background: #fff7f6; font-size: 11px; }
-    .flow-action-row { padding: 10px 22px 0; display: flex; justify-content: flex-end; }
     .round-block { padding: 16px 22px 18px; border-bottom: 1px solid var(--rule); }
     .round-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .round-heading h2 { margin: 0; font-size: 12px; font-weight: 700; }
@@ -371,6 +378,8 @@
       .heading-actions .button { flex: 1 1 auto; }
       .heading-actions .button { height: 33px; font-size: 10px; padding: 0 9px; }
       .quick-stats { margin-bottom: 13px; }
+      .interview-reminder { align-items: flex-start; flex-wrap: wrap; gap: 10px; padding: 12px; margin-bottom: 13px; }
+      .interview-reminder-time { font-size: 12px; }
       .quick-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
       .stat { min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; flex: 1; padding: 9px 6px 9px 0; gap: 5px; }
       .stat + .stat { padding-left: 8px; }
@@ -546,6 +555,7 @@
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <script type="module" src="/src/knowledge-editor.js"></script>
   <script>
     const stageNames = ["投递", "测评", "笔试", "AI面试", "简历筛选", "面试", "Offer", "入职"];
     const rounds = [
@@ -604,6 +614,7 @@
     let searchQuery = "";
     let cityFilter = "";
     let opportunitySort = "created";
+    let opportunityFilter = "active";
     let selectedResumeId = null;
     let selectedKnowledgeId = null;
     let jobDetailId = null;
@@ -611,6 +622,7 @@
     let toastTimer;
     let resumeSaveTimer;
     let knowledgeSaveTimer;
+    let knowledgeSaveQueue = Promise.resolve();
 
     const $ = (selector, root = document) => root.querySelector(selector);
     const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -620,8 +632,8 @@
     const getJob = id => jobs.find(job => job.id === id);
     const getAnyJob = id => getJob(id) || opportunities.find(job => job.id === id);
     const shortUrl = value => { try { const url = new URL(value); return `${url.hostname}${url.pathname === "/" ? "" : url.pathname}`; } catch { return value || "未提供"; } };
-    const getSession = (job, roundId) => job.sessions[roundId] || (job.sessions[roundId] = { date: "", result: "待安排", summary: "", questions: [] });
-    const stageLabel = job => job.status === "closed" ? "流程已终止" : job.stageIndex === 5 ? `${rounds.find(round => round.id === job.activeRound)?.label || "一面"}中` : job.stageIndex === 7 ? "已入职" : job.stageIndex === 6 ? "Offer" : `${stageNames[job.stageIndex]}中`;
+    const getSession = (job, roundId) => job.sessions[roundId] || (job.sessions[roundId] = { date: "", time: "", result: "待安排", summary: "", questions: [] });
+    const stageLabel = job => job.status === "closed" ? "已拒绝" : job.stageIndex === 5 ? `${rounds.find(round => round.id === job.activeRound)?.label || "一面"}中` : job.stageIndex === 7 ? "已入职" : job.stageIndex === 6 ? "Offer" : `${stageNames[job.stageIndex]}中`;
     const matchesSearch = job => `${job.company} ${job.title} ${job.city} ${job.jd}`.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase());
     const draftKey = (jobId, roundId) => `campus-draft:${jobId}:${roundId}`;
     function restoreDrafts() {
@@ -631,7 +643,7 @@
           const raw = localStorage.getItem(draftKey(job.id, round.id));
           if (raw) {
             const draft = JSON.parse(raw);
-            if (Array.isArray(draft.questions)) job.sessions[round.id] = draft;
+            if (Array.isArray(draft.questions)) job.sessions[round.id] = { time: "", ...draft };
           }
         } catch { /* An invalid draft does not replace the saved record. */ }
       }
@@ -640,6 +652,41 @@
       const start = new Date(); start.setHours(0,0,0,0); start.setDate(start.getDate() - (start.getDay() + 6) % 7);
       const end = new Date(start); end.setDate(start.getDate() + 7);
       return jobs.reduce((count, job) => count + Object.values(job.sessions).filter(session => { const date = new Date(`${session.date}T00:00:00`); return date >= start && date < end; }).length, 0);
+    }
+
+    function getUpcomingInterview() {
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+      return jobs.flatMap(job => {
+        if (job.status !== "applied") return [];
+        return Object.entries(job.sessions || {}).flatMap(([roundId, session]) => {
+          if (!session.date || ["通过", "未通过", "待反馈"].includes(session.result)) return [];
+          const scheduledAt = new Date(`${session.date}T${session.time || (session.date === today ? "23:59" : "00:00")}:00`);
+          return Number.isNaN(scheduledAt.getTime()) || scheduledAt < now ? [] : [{ job, roundId, session, scheduledAt }];
+        });
+      }).sort((a, b) => a.scheduledAt - b.scheduledAt)[0] || null;
+    }
+
+    function getUpcomingReminder() {
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+      const exams = jobs.flatMap(job => {
+        if (job.status !== "applied" || !job.examAt) return [];
+        const [date, time = ""] = String(job.examAt).split("T");
+        const scheduledAt = new Date(`${date}T${time || (date === today ? "23:59" : "00:00")}:00`);
+        return Number.isNaN(scheduledAt.getTime()) || scheduledAt < now ? [] : [{ kind: "exam", job, date, time, scheduledAt }];
+      });
+      const interview = getUpcomingInterview();
+      const interviews = interview ? [{ ...interview, kind: "interview", date: interview.session.date, time: interview.session.time || "" }] : [];
+      return [...exams, ...interviews].sort((a, b) => a.scheduledAt - b.scheduledAt)[0] || null;
+    }
+
+    function interviewReminderLabel(date) {
+      const day = new Date(`${date}T00:00:00`);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const days = Math.round((day - today) / 86400000);
+      const dateLabel = days === 0 ? "今天" : days === 1 ? "明天" : fmtDate(date);
+      return `${dateLabel}${days > 1 ? ` · ${days} 天后` : ""}`;
     }
 
     async function refreshNativeData() {
@@ -682,7 +729,7 @@
       toastTimer = setTimeout(() => toast.classList.remove("visible"), 2600);
     }
 
-    function setView(view) {
+    async function setView(view) {
       if (activeView === "interview") saveCurrentQuestion();
       if (activeView === "resumes") {
         clearTimeout(resumeSaveTimer);
@@ -690,9 +737,19 @@
       }
       if (activeView === "knowledge") {
         clearTimeout(knowledgeSaveTimer);
-        persistKnowledgeDocument(false);
+        if ($("#knowledge-title") && !(await persistKnowledgeDocument(false))) return;
+      }
+      if ((activeView === "knowledge") !== (view === "knowledge")) {
+        searchQuery = "";
+        $("#global-search").value = "";
       }
       activeView = view;
+      const primaryAction = $(".top-actions > .button");
+      primaryAction.dataset.action = view === "knowledge" ? "create-knowledge" : "open-add";
+      $(".button-label", primaryAction).textContent = view === "knowledge" ? "新建文档" : "添加岗位";
+      const searchLabel = view === "knowledge" ? "搜索知识标题、分类或正文" : "搜索公司或岗位";
+      $("#global-search").placeholder = searchLabel;
+      $("#global-search").parentElement.setAttribute("aria-label", searchLabel);
       $$(".nav-link").forEach(button => {
         const isActive = button.dataset.view === view || (view === "interview" && button.dataset.view === "pipeline") || (view === "job-detail" && button.dataset.view === "opportunities");
         button.classList.toggle("active", isActive);
@@ -705,18 +762,40 @@
     }
 
     function render() {
-      $("#opportunity-count").textContent = opportunities.length;
+      $("#opportunity-count").textContent = opportunities.filter(job => opportunityBucket(job) === "active").length;
       $("#pipeline-count").textContent = jobs.filter(job => job.status === "applied").length;
       const sessionCount = jobs.reduce((sum, job) => sum + Object.values(job.sessions).filter(session => session.questions.length > 0).length, 0);
       $("#archive-count").textContent = sessionCount;
       $("#knowledge-count").textContent = knowledgeDocuments.length;
       $("#resume-count").textContent = resumes.length;
       const main = $("#main-content");
+      window.KnowledgeEditor?.destroy();
+      if (activeView !== "knowledge") document.body.classList.remove("knowledge-focus");
       if (activeView === "pipeline") main.innerHTML = renderPipeline();
       if (activeView === "opportunities") main.innerHTML = renderOpportunities();
       if (activeView === "archive") main.innerHTML = renderArchive();
-      if (activeView === "knowledge") main.innerHTML = renderKnowledge();
-      if (activeView === "interview") main.innerHTML = renderInterviewEditor();
+      if (activeView === "knowledge") {
+        main.innerHTML = renderKnowledge();
+        const element = $("#knowledge-editor");
+        const selected = knowledgeDocuments.find(item => item.id === selectedKnowledgeId);
+        if (element && selected && window.KnowledgeEditor) window.KnowledgeEditor.mount({
+          element, content: selected.content,
+          onChange: scheduleKnowledgeSave,
+          onSave: () => persistKnowledgeDocument(true),
+          onError: message => { updateKnowledgeSaveState("error", message); showToast(message); },
+          onBusy: busy => busy ? updateKnowledgeSaveState("saving", "正在处理图片…") : scheduleKnowledgeSave(),
+          onOpenLink: async url => {
+            try {
+              if (isDesktop) await desktopInvoke("open_job_url", { url });
+              else window.open(url, "_blank", "noopener,noreferrer");
+            } catch (error) { showToast(`链接未打开：${String(error)}`); }
+          },
+        });
+      }
+      if (activeView === "interview") {
+        main.innerHTML = renderInterviewEditor();
+        addInterviewTimeControl(main);
+      }
       if (activeView === "resumes") main.innerHTML = renderResumes();
       if (activeView === "job-detail") main.innerHTML = renderJobDescription();
     }
@@ -733,6 +812,10 @@
       if (selected) currentJobId = selected.id;
       if (!selected) return `${renderPageHeading("正在推进", "当前没有已投递的岗位。") }<div class="empty-state"><strong>还没有正在推进的岗位</strong>从「看看机会」中把已投递岗位移入这里。</div>`;
       const heading = renderPageHeading("正在推进", `跟进 ${activeJobs.length} 个已投递岗位，按最近一次进展整理。`, `<button class="button" data-action="open-add" data-mode="url">${icon("link","sm")}从网址录入</button><button class="button primary" data-action="open-add" data-mode="file">${icon("plus","sm")}添加岗位</button>`);
+      const upcomingReminder = getUpcomingReminder();
+      const interviewReminder = upcomingReminder
+        ? `<section class="interview-reminder" aria-label="下一场招聘环节时间提醒"><div class="interview-reminder-copy"><span class="interview-reminder-label">${upcomingReminder.kind === "exam" ? "下一场笔试" : "下一场面试"} · ${escapeHtml(interviewReminderLabel(upcomingReminder.date))}</span><strong class="interview-reminder-title">${escapeHtml(upcomingReminder.job.company)} · ${escapeHtml(upcomingReminder.job.title)}</strong><span class="interview-reminder-meta">${upcomingReminder.kind === "exam" ? "笔试" : escapeHtml(rounds.find(round => round.id === upcomingReminder.roundId)?.label || "面试")}</span></div><time class="interview-reminder-time" datetime="${escapeHtml(`${upcomingReminder.date}T${upcomingReminder.time || ""}`)}">${escapeHtml(fmtDate(upcomingReminder.date))} · ${escapeHtml(upcomingReminder.time || "具体时间待确认")}</time>${upcomingReminder.kind === "exam" ? `<button class="button small" data-action="select-job" data-job-id="${escapeHtml(upcomingReminder.job.id)}">查看岗位</button>` : `<button class="button small" data-action="open-interview" data-job-id="${escapeHtml(upcomingReminder.job.id)}" data-round="${escapeHtml(upcomingReminder.roundId)}">查看记录</button>`}</section>`
+        : `<section class="interview-reminder interview-reminder-empty" aria-label="招聘环节时间提醒"><div class="interview-reminder-copy"><span class="interview-reminder-label">招聘环节时间提醒</span><strong class="interview-reminder-title">暂无已预约的笔试或面试</strong><span class="interview-reminder-meta">填写笔试或面试日期和时间后，最近一场招聘环节会显示在这里。</span></div>${selected.status === "applied" ? `<button class="button small" data-action="open-interview" data-job-id="${escapeHtml(selected.id)}" data-round="${escapeHtml(selected.activeRound || "first")}">安排面试时间</button>` : ""}</section>`;
       const renderRoleItem = job => `
         <button class="role-item ${job.status === "closed" ? "terminated" : ""} ${job.id === selected.id ? "selected" : ""}" data-action="select-job" data-job-id="${escapeHtml(job.id)}" aria-pressed="${job.id === selected.id}">
           <span class="company-mark ${escapeHtml(job.markTone)}">${escapeHtml(job.mark)}</span>
@@ -752,27 +835,33 @@
         return `<button class="round-button ${complete ? "done" : ""} ${active ? "active" : ""}" data-action="open-interview" data-round="${round.id}" aria-label="打开${round.label}记录"><span class="round-dot"></span><span>${round.label}</span></button>`;
       }).join("");
       const activity = selected.activity.map((item, index) => `<div class="activity-row"><span class="activity-bullet"></span><span>${escapeHtml(item)}<span class="activity-time">${isDesktop ? "" : index === 0 ? escapeHtml(selected.updated) : ""}</span></span></div>`).join("");
-      const tags = selected.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
+      const tags = selected.tags.filter(tag => !tag.startsWith("__vacancy:") && !tag.startsWith("__verified:") && !tag.startsWith("__scope:")).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
       const terminateButton = selected.status === "applied"
-        ? `<button class="button danger small" data-action="terminate-job" data-job-id="${escapeHtml(selected.id)}">${icon("close","sm")}终止流程</button>`
+        ? `<button class="button danger small" data-action="terminate-job" data-job-id="${escapeHtml(selected.id)}" title="终止流程并标记为已拒绝">${icon("close","sm")}终止</button>`
         : "";
       return `${heading}
+        ${interviewReminder}
         <div class="quick-stats" aria-label="进度概览"><div class="stat"><strong class="coral">${activeJobs.length}</strong><span>推进中岗位</span></div><div class="stat"><strong>${weekInterviews()}</strong><span>本周面试</span></div><div class="stat"><strong class="green">${jobs.reduce((count, job) => count + Object.values(job.sessions).filter(session => session.questions.length).length,0)}</strong><span>已归档轮次</span></div></div>
         <div class="workspace">
-          <section class="role-list" aria-label="岗位列表"><div class="list-head"><strong>推进中</strong><span>${activeJobs.length} 个岗位</span></div>${list}${terminatedJobs.length ? `<div class="list-head"><strong>已终止</strong><span>${terminatedJobs.length} 个岗位</span></div>${terminatedList}` : ""}</section>
+          <section class="role-list" aria-label="岗位列表"><div class="list-head"><strong>推进中</strong><span>${activeJobs.length} 个岗位</span></div>${list}${terminatedJobs.length ? `<div class="list-head"><strong>已拒绝</strong><span>${terminatedJobs.length} 个岗位</span></div>${terminatedList}` : ""}</section>
           <section class="detail-sheet" aria-label="岗位流程详情">
-            <div class="detail-head"><div class="company-title"><span class="company-mark ${escapeHtml(selected.markTone)}">${escapeHtml(selected.mark)}</span><div><div class="company-name">${escapeHtml(selected.company)} · ${escapeHtml(selected.team)}</div><div class="job-title">${escapeHtml(selected.title)}</div><div class="job-inline-meta"><span class="inline-meta">${icon("location")} ${escapeHtml(selected.city)}</span><span class="inline-meta">${icon("calendar")} 投递于 ${fmtDate(selected.appliedAt)}</span><span class="badge">${escapeHtml(stageLabel(selected))}</span></div><div class="job-detail-tools"><button class="button small" data-action="show-job-jd" data-job-id="${escapeHtml(selected.id)}">查看岗位 JD ${icon("arrow","sm")}</button></div></div></div><div class="detail-tools"><button class="icon-action" data-action="delete-job" data-job-id="${escapeHtml(selected.id)}" aria-label="删除岗位" title="删除岗位">${icon("trash","sm")}</button><button class="icon-button" data-action="open-add" aria-label="新增岗位">${icon("more")}</button></div></div>
-            ${terminateButton ? `<div class="flow-action-row">${terminateButton}</div>` : ""}
+            <div class="detail-head"><div class="company-title"><span class="company-mark ${escapeHtml(selected.markTone)}">${escapeHtml(selected.mark)}</span><div><div class="company-name">${escapeHtml(selected.company)} · ${escapeHtml(selected.team)}</div><div class="job-title">${escapeHtml(selected.title)}</div><div class="job-inline-meta"><span class="inline-meta">${icon("location")} ${escapeHtml(selected.city)}</span><span class="inline-meta">${icon("calendar")} 投递于 ${fmtDate(selected.appliedAt)}</span><span class="badge">${escapeHtml(stageLabel(selected))}</span></div><div class="job-detail-tools"><button class="button small" data-action="show-job-jd" data-job-id="${escapeHtml(selected.id)}">查看岗位 JD ${icon("arrow","sm")}</button></div></div></div><div class="detail-tools">${terminateButton}<button class="icon-action" data-action="delete-job" data-job-id="${escapeHtml(selected.id)}" aria-label="删除岗位" title="删除岗位">${icon("trash","sm")}</button><button class="icon-button" data-action="open-add" aria-label="新增岗位">${icon("more")}</button></div></div>
             <div class="stage-block"><div class="section-line"><h2>招聘进度</h2><span class="subtle">最近更新 · ${escapeHtml(selected.updated)}</span></div><div class="stage-rail" role="group" aria-label="招聘流程阶段">${stageItems}</div></div>
-            ${selected.status === "closed" ? `<div class="termination-note">${icon("close","sm")} 流程已终止；岗位信息和面试记录已保留。</div>` : ""}
+            ${selected.status === "applied" ? (() => { const [examDate = "", examTime = ""] = String(selected.examAt || "").split("T"); return `<div class="round-block" style="margin-top:16px"><div class="round-heading"><h2>笔试时间</h2><span>设置后会和面试提醒显示在一起</span></div><div class="editor-meta"><label class="sr-only" for="exam-date">笔试日期</label><input id="exam-date" type="date" value="${escapeHtml(examDate)}"><label class="sr-only" for="exam-time">笔试时间</label><input id="exam-time" type="time" value="${escapeHtml(examTime)}"><button class="button small" data-action="save-exam-time" data-job-id="${escapeHtml(selected.id)}">保存笔试时间</button><button class="button quiet small" data-action="clear-exam-time" data-job-id="${escapeHtml(selected.id)}">清空</button></div></div>`; })() : ""}
+            ${selected.status === "closed" ? `<div class="termination-note">${icon("close","sm")} 已拒绝，招聘流程已终止。岗位信息和面试记录已保留。</div>` : ""}
             <div class="round-block"><div class="round-heading"><h2>面试轮次</h2><span>选择节点，记录本轮题目与回答</span></div><div class="round-controls" role="group" aria-label="面试轮次">${roundButtons}</div><div class="round-note">${icon("clock")} 当前进度：${escapeHtml(stageLabel(selected))}</div></div>
             <div class="detail-lower"><section class="lower-section"><h3 class="lower-title">岗位摘要</h3><div class="jd-snippet">${escapeHtml(selected.jd)}</div><div class="tag-row">${tags}</div></section><section class="lower-section"><h3 class="lower-title">最近动态</h3><div class="activity">${activity}</div></section></div>
           </section>
         </div>`;
     }
 
+    function opportunityBucket(job) {
+      const tags = job.tags || [];
+      if (tags.includes("__scope:other")) return "other";
+      return tags.includes("__vacancy:active") && tags.includes("__scope:target") ? "active" : "pending";
+    }
     function renderOpportunities() {
-      const available = opportunities;
+      const available = opportunities.filter(job => opportunityBucket(job) === opportunityFilter);
       const filtered = available.filter(job => matchesSearch(job) && (!cityFilter || job.city === cityFilter)).sort((a,b) => {
         const companyOrder = a.company.localeCompare(b.company, "zh-CN");
         if (companyOrder) return companyOrder;
@@ -780,9 +869,15 @@
         return (b[opportunitySort] || "").localeCompare(a[opportunitySort] || "") || a.title.localeCompare(b.title, "zh-CN");
       });
       const cities = [...new Set(available.map(job => job.city).filter(Boolean))];
-      const heading = renderPageHeading("看看机会", `${available.length} 个尚未投递的岗位，按公司归组。`, `<button class="button" data-action="open-add" data-mode="url">${icon("link","sm")}从网址录入</button><button class="button primary" data-action="open-add" data-mode="file">${icon("upload","sm")}导入 JD</button>`);
-      const rows = filtered.map(job => `<div class="opportunity-row" data-job-id="${escapeHtml(job.id)}"><button class="opportunity-main" data-action="show-job-jd" data-job-id="${escapeHtml(job.id)}" aria-label="查看 ${escapeHtml(job.company)} ${escapeHtml(job.title)} 的岗位 JD"><span class="company-mark ${escapeHtml(job.markTone || job.tone)}">${escapeHtml(job.mark)}</span><span class="opportunity-name"><span class="opportunity-company">${escapeHtml(job.company)} <span class="source-chip">${escapeHtml(job.source)}</span></span><span class="opportunity-title">${escapeHtml(job.title)} · ${escapeHtml(job.city)}</span></span></button><div class="opportunity-date ${job.posted ? "" : "missing"}">${job.posted ? fmtDate(job.posted) : "未提供"}</div><div class="opportunity-date">${fmtDate(job.created)}</div><button class="opportunity-jd-link" data-action="open-job-url" data-job-id="${escapeHtml(job.id)}" title="${escapeHtml(job.sourceUrl || "未记录岗位网址")}">${escapeHtml(shortUrl(job.sourceUrl))}</button><div class="row-actions"><button class="button small" data-action="apply-job" data-job-id="${escapeHtml(job.id)}" title="标记已投递">已投递 ${icon("arrow","sm")}</button><button class="icon-action" data-action="delete-job" data-job-id="${escapeHtml(job.id)}" aria-label="删除 ${escapeHtml(job.company)} ${escapeHtml(job.title)}" title="删除岗位">${icon("trash","sm")}</button></div></div>`).join("");
-      return `${heading}<div class="opportunity-toolbar"><div class="filter-row"><select id="city-filter" class="select-control" aria-label="工作地点筛选"><option value="">全部地点</option>${cities.map(city => `<option value="${escapeHtml(city)}" ${cityFilter === city ? "selected" : ""}>${escapeHtml(city)}</option>`).join("")}</select><select id="opportunity-sort" class="select-control" aria-label="排序">${[["created","最近录入"],["posted","最近发布"],["company","公司名称"]].map(([key,label]) => `<option value="${key}" ${key === opportunitySort ? "selected" : ""}>${label}</option>`).join("")}</select></div></div><div class="opportunity-table" role="table" aria-label="未投递岗位列表"><div class="table-head" role="row"><span>公司 / 岗位</span><span title="仅展示 JD 明确提供的官方发布日期">发布日期</span><span>录入时间</span><span>JD 网址</span><span></span></div>${rows || `<div class="inline-empty">没有匹配的岗位</div>`}</div>`;
+      const description = opportunityFilter === "active" ? "官网已核验在招 · 移动端、客户端、前端、AI Agent" : opportunityFilter === "pending" ? "尚未确认当前招聘状态，请打开官网核实" : "已保存的其他方向岗位";
+      const heading = renderPageHeading("看看机会", `${available.length} 个岗位 · ${description}`, `<button class="button" data-action="open-add" data-mode="url">${icon("link","sm")}从网址录入</button><button class="button primary" data-action="open-add" data-mode="file">${icon("upload","sm")}导入 JD</button>`);
+      const rows = filtered.map(job => {
+        const verifiedAt = (job.tags || []).find(tag => tag.startsWith("__verified:"))?.slice(11);
+        const badge = opportunityBucket(job) === "active" ? `在招 · ${verifiedAt || "日期未记录"} 核验` : "招聘状态待核验";
+        return `<div class="opportunity-row" data-job-id="${escapeHtml(job.id)}"><button class="opportunity-main" data-action="show-job-jd" data-job-id="${escapeHtml(job.id)}" aria-label="查看 ${escapeHtml(job.company)} ${escapeHtml(job.title)} 的岗位 JD"><span class="company-mark ${escapeHtml(job.markTone || job.tone)}">${escapeHtml(job.mark)}</span><span class="opportunity-name"><span class="opportunity-company">${escapeHtml(job.company)} <span class="source-chip">${escapeHtml(badge)}</span></span><span class="opportunity-title">${escapeHtml(job.title)} · ${escapeHtml(job.city)}</span></span></button><div class="opportunity-date ${job.posted ? "" : "missing"}">${job.posted ? fmtDate(job.posted) : "未提供"}</div><div class="opportunity-date">${fmtDate(job.created)}</div><button class="opportunity-jd-link" data-action="open-job-url" data-job-id="${escapeHtml(job.id)}" title="${escapeHtml(job.sourceUrl || "未记录岗位网址")}">${escapeHtml(shortUrl(job.sourceUrl))}</button><div class="row-actions"><button class="button small" data-action="apply-job" data-job-id="${escapeHtml(job.id)}" title="标记已投递">已投递 ${icon("arrow","sm")}</button><button class="icon-action" data-action="delete-job" data-job-id="${escapeHtml(job.id)}" aria-label="删除 ${escapeHtml(job.company)} ${escapeHtml(job.title)}" title="删除岗位">${icon("trash","sm")}</button></div></div>`;
+      }).join("");
+      const verificationFilter = `<select id="opportunity-filter" class="select-control" aria-label="招聘状态筛选">${[["active","官网在招"],["pending","待核验"],["other","其他方向"]].map(([key,label]) => `<option value="${key}" ${key === opportunityFilter ? "selected" : ""}>${label}（${opportunities.filter(job => opportunityBucket(job) === key).length}）</option>`).join("")}</select>`;
+      return `${heading}<div class="opportunity-toolbar"><div class="filter-row">${verificationFilter}<select id="city-filter" class="select-control" aria-label="工作地点筛选"><option value="">全部地点</option>${cities.map(city => `<option value="${escapeHtml(city)}" ${cityFilter === city ? "selected" : ""}>${escapeHtml(city)}</option>`).join("")}</select><select id="opportunity-sort" class="select-control" aria-label="排序">${[["created","最近录入"],["posted","最近发布"],["company","公司名称"]].map(([key,label]) => `<option value="${key}" ${key === opportunitySort ? "selected" : ""}>${label}</option>`).join("")}</select></div></div><div class="opportunity-table" role="table" aria-label="未投递岗位列表"><div class="table-head" role="row"><span>公司 / 岗位</span><span title="仅展示 JD 明确提供的官方发布日期">发布日期</span><span>录入时间</span><span>JD 网址</span><span></span></div>${rows || `<div class="inline-empty">没有匹配的岗位</div>`}</div>`;
     }
 
     function renderJobDescription() {
@@ -832,37 +927,46 @@
       return `${heading}<div class="archive-layout"><aside class="archive-tree" aria-label="面试归档目录"><div class="tree-heading"><span>归档目录</span><span>${sessions.length} 轮</span></div>${tree || `<div class="empty-state">还没有面试复盘</div>`}</aside><section class="archive-content"><div class="archive-title"><div><h2>${escapeHtml(selectedJob.company)} · ${escapeHtml(selectedJob.title)}</h2><p>${escapeHtml(selectedRound.label)} · ${fmtDate(session.date)} · ${escapeHtml(session.result || "待安排")}</p></div><button class="button small" data-action="edit-archive" data-job-id="${escapeHtml(selectedJob.id)}" data-round="${selectedRound.id}">编辑复盘 ${icon("arrow","sm")}</button></div><div class="archive-qa">${qa || `<div class="empty-state"><strong>这一轮还没有记录</strong>打开复盘编辑器，补充题目和回答。</div>`}</div></section></div>`;
     }
 
+    function renderKnowledgeTree(documents, selectedId) {
+      const root = { folders: new Map(), documents: [] };
+      for (const item of documents) {
+        let branch = root;
+        const segments = (item.category || "未分类").split("/").map(part => part.trim()).filter(Boolean);
+        for (const segment of segments.length ? segments : ["未分类"]) {
+          if (!branch.folders.has(segment)) branch.folders.set(segment, { folders: new Map(), documents: [] });
+          branch = branch.folders.get(segment);
+        }
+        branch.documents.push(item);
+      }
+      const renderBranch = (branch, parent = []) => [...branch.folders].sort(([a],[b]) => a.localeCompare(b, "zh-CN")).map(([name, child]) => `<details class="knowledge-folder" data-category-path="${escapeHtml([...parent, name].join("/"))}" open><summary>${escapeHtml(name)}</summary>${renderBranch(child, [...parent, name])}</details>`).join("") + branch.documents.map(item => `<button class="tree-job ${item.id === selectedId ? "selected" : ""}" data-action="select-knowledge" data-document-id="${escapeHtml(item.id)}" aria-current="${item.id === selectedId ? "page" : "false"}">${icon("file","sm")}<span>${escapeHtml(item.title)}</span></button>`).join("");
+      return renderBranch(root);
+    }
+
     function renderKnowledge() {
       const documents = knowledgeDocuments.filter(document =>
-        `${document.category} ${document.title} ${document.content}`.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase())
+        `${document.category} ${document.title} ${window.KnowledgeEditor?.documentText(document.content) ?? document.content}`.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase())
       );
       const selected = documents.find(document => document.id === selectedKnowledgeId) || documents[0];
       if (selected) selectedKnowledgeId = selected.id;
       const categories = [...new Set(documents.map(document => document.category || "未分类"))].sort((a,b) => a.localeCompare(b, "zh-CN"));
-      const tree = categories.map(category => {
-        const items = documents.filter(document => (document.category || "未分类") === category);
-        return `<div class="tree-company">${icon("folder","sm")}<span>${escapeHtml(category)}</span></div>${items.map(document => `
-          <button class="tree-job ${document.id === selected?.id ? "selected" : ""}" data-action="select-knowledge" data-document-id="${escapeHtml(document.id)}">
-            ${icon("chevron","sm")}<span>${escapeHtml(document.title)}</span>
-          </button>`).join("")}`;
-      }).join("");
+      const tree = renderKnowledgeTree(documents, selected?.id);
       const createButton = `<button class="button primary" data-action="create-knowledge">${icon("plus","sm")}新建文档</button>`;
-      const heading = renderPageHeading("知识积累", `${knowledgeDocuments.length} 篇个人知识文档。按分类整理，独立于面试复盘。`, createButton);
-      if (!selected) return `${heading}<div class="detail-sheet knowledge-empty"><div class="empty-state"><strong>还没有知识文档</strong><button class="button primary small" data-action="create-knowledge">${icon("plus","sm")}新建文档</button></div></div>`;
-      return `${heading}<div class="archive-layout">
+      const heading = renderPageHeading("知识积累", "把学到的知识、解决过的问题，整理成自己的文档。", createButton);
+      if (!selected) return `${heading}<div class="detail-sheet knowledge-empty"><div class="empty-state"><strong>${knowledgeDocuments.length ? "没有匹配的知识文档" : "还没有知识文档"}</strong>${knowledgeDocuments.length ? "试试其他标题、分类或正文关键词。" : "记录技术笔记、学习心得和项目经验。"}<button class="button primary small" data-action="create-knowledge">${icon("plus","sm")}新建文档</button></div></div>`;
+      return `${heading}<div class="archive-layout knowledge-layout">
         <aside class="archive-tree" aria-label="知识分类目录">
           <div class="tree-heading"><span>知识目录</span><span>${documents.length} 篇</span></div>
-          ${tree || `<div class="inline-empty">没有匹配文档</div>`}
+          <div id="knowledge-directory">${tree || `<div class="inline-empty">没有匹配文档</div>`}</div>
+          <div class="knowledge-outline-wrap"><h2>本文大纲</h2><nav id="knowledge-outline" aria-label="文档标题大纲"></nav></div>
         </aside>
         <section class="archive-content knowledge-content">
-          <div class="archive-title">
+          <div class="knowledge-document-head"><div class="archive-title">
             <div class="knowledge-title-wrap"><label for="knowledge-title">文档标题<input id="knowledge-title" value="${escapeHtml(selected.title)}" maxlength="160"></label><p>最近保存 · ${fmtDate((selected.updatedAt || "").slice(0,10))}</p></div>
-            <div class="knowledge-actions"><button class="button primary small" data-action="save-knowledge">${icon("save","sm")}保存</button><button class="icon-action" data-action="delete-knowledge" aria-label="删除知识文档" title="删除知识文档">${icon("trash","sm")}</button></div>
+            <div class="knowledge-actions"><button class="button small" data-action="focus-knowledge" aria-pressed="${document.body.classList.contains("knowledge-focus")}">${document.body.classList.contains("knowledge-focus") ? "退出专注" : "专注写作"}</button><button class="button primary small" data-action="save-knowledge" title="保存 · Ctrl+S">${icon("save","sm")}保存</button><button class="icon-action" data-action="delete-knowledge" aria-label="删除知识文档" title="删除知识文档">${icon("trash","sm")}</button></div>
           </div>
-          <div class="knowledge-fields"><label for="knowledge-category">所属分类<input id="knowledge-category" value="${escapeHtml(selected.category || "未分类")}" maxlength="120"></label></div>
-          <label class="sr-only" for="knowledge-content">文档正文</label>
-          <textarea id="knowledge-content" class="knowledge-body" placeholder="记录技术概念、项目经验或需要持续整理的内容……">${escapeHtml(selected.content)}</textarea>
-          <div class="resume-editor-foot"><span>仅保存在本机知识文档中</span><span>${selected.content.length} 字符</span></div>
+          <div class="knowledge-fields"><label for="knowledge-category">分类<input id="knowledge-category" list="knowledge-categories" value="${escapeHtml(selected.category || "未分类")}" maxlength="120"></label><datalist id="knowledge-categories">${categories.map(category => `<option value="${escapeHtml(category)}"></option>`).join("")}</datalist><span class="knowledge-category-help">用 / 划分层级，例如 前端 / JavaScript</span></div></div>
+          <div id="knowledge-editor" class="knowledge-editor-host"></div>
+          <div class="knowledge-editor-foot"><span id="knowledge-save-state" class="knowledge-save-state" data-state="saved" role="status" aria-live="polite">已保存到本机</span><span>自动保存 · Ctrl+S 保存 · Ctrl+K 链接</span><span id="knowledge-word-count"></span></div>
         </section>
       </div>`;
     }
@@ -878,6 +982,24 @@
       const tabs = session.questions.map((item, index) => `<button class="question-tab ${item.id === question.id ? "selected" : ""}" data-action="select-question" data-question-id="${escapeHtml(item.id)}" aria-label="选择第 ${index + 1} 道题">${index + 1}</button>`).join("");
       const heading = `<div class="page-heading"><div><button class="button quiet small" data-action="back-to-job">${icon("back","sm")}返回岗位</button><h1 style="margin-top:10px">${escapeHtml(round.label)} · 面试复盘</h1><div class="page-subtitle">${escapeHtml(job.company)} · ${escapeHtml(job.title)}</div></div><div class="heading-actions"><button class="button" data-action="open-archive">${icon("book","sm")}查看归档</button><button class="button primary" data-action="save-interview">${icon("save","sm")}保存记录</button></div></div>`;
       return `${heading}<div class="detail-sheet"><div class="detail-head"><div class="company-title"><span class="company-mark ${escapeHtml(job.markTone)}">${escapeHtml(job.mark)}</span><div><div class="company-name">本轮面试信息</div><div class="job-inline-meta" style="margin-top:8px"><span class="badge ${session.result === "通过" ? "green" : ""}">${escapeHtml(session.result || "进行中")}</span></div></div></div><div class="editor-meta"><label class="sr-only" for="round-choice">面试轮次</label><select id="round-choice">${rounds.map(item => `<option value="${item.id}" ${item.id === round.id ? "selected" : ""}>${item.label}</option>`).join("")}</select><label class="sr-only" for="interview-date">面试日期</label><input id="interview-date" type="date" value="${escapeHtml(session.date)}"><label class="sr-only" for="interview-result">面试结果</label><select id="interview-result">${["进行中","待安排","通过","待反馈","未通过"].map(value => `<option ${value === session.result ? "selected" : ""}>${value}</option>`).join("")}</select></div></div><div class="qa-workspace"><section class="qa-column"><div class="qa-column-head"><strong>题目</strong><button class="button small" data-action="add-question">${icon("plus","sm")}添加题目</button></div><div class="question-list" aria-label="本轮题目">${tabs}</div><div class="editor-field"><label class="field-label" for="question-text"><span>题目内容</span><span>题目 ${session.questions.indexOf(question) + 1} / ${session.questions.length}</span></label><textarea id="question-text" class="editor-area" placeholder="记录面试官提出的问题...">${escapeHtml(question.question)}</textarea><div class="editor-foot"><span>按面试顺序整理，方便复盘回看</span><button class="button quiet small" data-action="remove-question" ${session.questions.length <= 1 ? "disabled" : ""}>${icon("trash","sm")}删除题目</button></div></div></section><section class="qa-column"><div class="qa-column-head"><strong>回答</strong><span>个人复盘内容</span></div><div class="editor-field"><label class="field-label" for="answer-text"><span>我的回答</span><span>可持续补充</span></label><textarea id="answer-text" class="editor-area answer" placeholder="写下当时的回答、思路和遗漏点...">${escapeHtml(question.answer)}</textarea><div class="editor-foot"><span>回答与题目分开保存</span><span class="save-status"><i class="status-dot"></i>本地草稿</span></div></div></section></div><div style="padding:15px 17px 17px"><label class="field-label" for="session-summary">本轮总结</label><textarea id="session-summary" class="session-summary" placeholder="记录面试感受、待补知识点或后续行动">${escapeHtml(session.summary)}</textarea></div></div>`;
+    }
+
+    function addInterviewTimeControl(root) {
+      const meta = $(".editor-meta", root);
+      const result = $("#interview-result", meta);
+      if (!meta || !result) return;
+      const label = document.createElement("label");
+      label.className = "sr-only";
+      label.htmlFor = "interview-time";
+      label.textContent = "面试时间";
+      const input = document.createElement("input");
+      input.id = "interview-time";
+      input.type = "time";
+      input.setAttribute("aria-label", "面试时间");
+      const job = getJob(currentJobId) || jobs[0];
+      input.value = job ? getSession(job, currentRoundId).time || "" : "";
+      meta.insertBefore(label, result);
+      meta.insertBefore(input, result);
     }
 
     function openAddDialog(mode = "file") {
@@ -917,6 +1039,8 @@
       $("#add-title").textContent = titles[mode];
     }
     async function addOpportunity({ company, title, city, posted, source, sourceUrl = "", salary = "面议", jd, tags = [], team = "" }) {
+      opportunityFilter = "pending";
+      cityFilter = "";
       if (isDesktop) {
         await desktopInvoke("create_job", { draft: {
           company: company.trim(),
@@ -935,7 +1059,7 @@
       }
       const id = `job-${Date.now()}`;
       const mark = company.trim().slice(0, 1) || "岗";
-      opportunities.unshift({ id, company: company.trim(), mark, tone: "green", title: title.trim(), city: city.trim() || "未注明", posted: posted || null, created: new Date().toISOString().slice(0,10), source, salary, jd, tags });
+      opportunities.unshift({ id, company: company.trim(), mark, tone: "green", title: title.trim(), city: city.trim() || "未注明", posted: posted || null, created: new Date().toISOString().slice(0,10), source, sourceUrl, salary, jd, tags });
       render();
     }
     async function applyOpportunity(id) {
@@ -963,52 +1087,75 @@
       setView("pipeline");
       showToast(`${source.company} · ${source.title} 已移入「正在推进」`);
     }
+    function updateKnowledgeSaveState(state, message) {
+      const status = $("#knowledge-save-state");
+      if (status) { status.dataset.state = state; status.textContent = message; }
+    }
+
+    function scheduleKnowledgeSave() {
+      clearTimeout(knowledgeSaveTimer);
+      updateKnowledgeSaveState("dirty", "未保存的修改");
+      knowledgeSaveTimer = setTimeout(() => persistKnowledgeDocument(false), 700);
+    }
+
     async function persistKnowledgeDocument(notify = false) {
+      clearTimeout(knowledgeSaveTimer);
       const document = knowledgeDocuments.find(item => item.id === selectedKnowledgeId);
       const titleInput = $("#knowledge-title");
       const categoryInput = $("#knowledge-category");
-      const contentInput = $("#knowledge-content");
-      if (!document || !titleInput || !categoryInput || !contentInput) return false;
+      const editor = window.KnowledgeEditor;
+      if (!document || !titleInput || !categoryInput || !editor?.editor) return false;
+      if (editor.isBusy()) { showToast("图片仍在处理中，请稍后再保存或切换文档"); return false; }
       const title = titleInput.value.trim();
       const category = categoryInput.value.trim() || "未分类";
-      const content = contentInput.value;
-      if (!title) {
-        if (notify) showToast("文档标题不能为空");
-        return false;
-      }
-      const changed = title !== document.title || category !== document.category || content !== document.content;
-      if (!changed) {
-        if (notify) showToast("知识文档已保存");
-        return true;
-      }
-      document.title = title;
-      document.category = category;
-      document.content = content;
-      try {
-        if (isDesktop) {
-          await desktopInvoke("save_knowledge_document", {
-            documentId: document.id,
-            category: document.category,
-            title: document.title,
-            content: document.content,
-          });
+      const content = editor.getContent();
+      if (!title) { updateKnowledgeSaveState("error", "请填写文档标题"); if (notify) showToast("文档标题不能为空"); return false; }
+      if (new TextEncoder().encode(content).length > editor.MAX_DOCUMENT_BYTES) { updateKnowledgeSaveState("error", "文档超过 24 MB，请减少图片"); return false; }
+      updateKnowledgeSaveState("saving", "正在保存…");
+      knowledgeSaveQueue = knowledgeSaveQueue.then(async () => {
+        try {
+          const changed = title !== document.title || category !== document.category || content !== document.content;
+          if (changed) {
+            const saved = { ...document, title, category, content, updatedAt: new Date().toISOString() };
+            if (isDesktop) {
+              await desktopInvoke("save_knowledge_document", { documentId: document.id, category, title, content });
+            } else {
+              localStorage.setItem("campus-knowledge-documents", JSON.stringify(knowledgeDocuments.map(item => item.id === saved.id ? saved : item)));
+            }
+            Object.assign(document, saved);
+          }
+          if (activeView === "knowledge" && selectedKnowledgeId === document.id &&
+              $("#knowledge-title")?.value.trim() === title &&
+              ($("#knowledge-category")?.value.trim() || "未分类") === category &&
+              editor.getContent() === content) {
+            updateKnowledgeSaveState("saved", `已保存 · ${new Date(document.updatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`);
+            const directory = $("#knowledge-directory");
+            if (directory && changed) {
+              const visibleDocuments = knowledgeDocuments.filter(item => `${item.category} ${item.title} ${editor.documentText(item.content)}`.toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase()));
+              const collapsed = new Set($$("details:not([open])", directory).map(folder => folder.dataset.categoryPath));
+              directory.innerHTML = renderKnowledgeTree(visibleDocuments, selectedKnowledgeId);
+              $$("details", directory).forEach(folder => { if (collapsed.has(folder.dataset.categoryPath)) folder.open = false; });
+            }
+          }
+          if (notify) {
+            showToast("知识文档已保存");
+          }
+          return true;
+        } catch (error) {
+          if (selectedKnowledgeId === document.id) updateKnowledgeSaveState("error", "保存失败，修改仍在编辑器中");
+          showToast(`知识文档未保存：${String(error)}`);
+          return false;
         }
-        document.updatedAt = new Date().toISOString();
-        if (!isDesktop) localStorage.setItem("campus-knowledge-documents", JSON.stringify(knowledgeDocuments));
-        if (notify) {
-          render();
-          showToast("知识文档已保存");
-        }
-        return true;
-      } catch (error) {
-        showToast(`知识文档未保存：${String(error)}`);
-        return false;
-      }
+      });
+      return knowledgeSaveQueue;
     }
 
     async function createKnowledgeDocument() {
+      clearTimeout(knowledgeSaveTimer);
       if (selectedKnowledgeId && $("#knowledge-title") && !(await persistKnowledgeDocument(false))) return;
       try {
+        searchQuery = "";
+        $("#global-search").value = "";
         let id;
         if (isDesktop) {
           id = await desktopInvoke("create_knowledge_document", { category: "未分类", title: "新建文档" });
@@ -1021,7 +1168,7 @@
           localStorage.setItem("campus-knowledge-documents", JSON.stringify(knowledgeDocuments));
           render();
         }
-        setView("knowledge");
+        await setView("knowledge");
         $("#knowledge-title")?.focus();
       } catch (error) {
         showToast(`知识文档未创建：${String(error)}`);
@@ -1031,6 +1178,8 @@
     async function deleteKnowledgeDocument() {
       const document = knowledgeDocuments.find(item => item.id === selectedKnowledgeId);
       if (!document || !window.confirm(`删除知识文档「${document.title}」？`)) return;
+      clearTimeout(knowledgeSaveTimer);
+      await knowledgeSaveQueue;
       try {
         if (isDesktop) {
           await desktopInvoke("delete_knowledge_document", { documentId: document.id });
@@ -1087,7 +1236,7 @@
     async function terminateJob(id) {
       const job = getJob(id);
       if (!job || job.status !== "applied") return;
-      if (!window.confirm(`确认将「${job.company} · ${job.title}」标记为终止流程？岗位信息和面试记录会保留。`)) return;
+      if (!window.confirm(`终止「${job.company} · ${job.title}」的招聘流程并标记为已拒绝？岗位信息和面试记录会保留。`)) return;
       try {
         if (isDesktop) {
           await desktopInvoke("terminate_job", { jobId: id });
@@ -1095,11 +1244,11 @@
         } else {
           job.status = "closed";
           job.updated = "刚刚";
-          job.activity.unshift("流程已终止");
+          job.activity.unshift("已拒绝，招聘流程已终止");
           job.activity = job.activity.slice(0, 3);
           render();
         }
-        showToast(`${job.company} · ${job.title} 流程已终止，岗位和面试记录已保留`);
+        showToast(`${job.company} · ${job.title} 已拒绝，招聘流程已终止`);
       } catch (error) {
         showToast(`流程未终止：${String(error)}`);
       }
@@ -1136,6 +1285,7 @@
       selected.question = $("#question-text")?.value || "";
       selected.answer = $("#answer-text")?.value || "";
       session.date = $("#interview-date")?.value || "";
+      session.time = $("#interview-time")?.value || "";
       session.result = $("#interview-result")?.value || "进行中";
       session.summary = $("#session-summary")?.value || "";
       if (isDesktop && activeView === "interview") {
@@ -1145,14 +1295,11 @@
     }
 
     document.addEventListener("input", event => {
-      if (event.target.matches('#question-text, #answer-text, #session-summary, #interview-date, #interview-result')) saveCurrentQuestion();
+      if (event.target.matches('#question-text, #answer-text, #session-summary, #interview-date, #interview-time, #interview-result')) saveCurrentQuestion();
       if (event.target.id === "resume-name") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.name = event.target.value; }
       if (event.target.id === "resume-target-role") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.targetRole = event.target.value; }
       if (event.target.id === "resume-content") { const resume = resumes.find(item => item.id === selectedResumeId); if (resume) resume.content = event.target.value; }
-      if (event.target.matches("#knowledge-title, #knowledge-category, #knowledge-content")) {
-        clearTimeout(knowledgeSaveTimer);
-        knowledgeSaveTimer = setTimeout(() => persistKnowledgeDocument(false), 900);
-      }
+      if (event.target.matches("#knowledge-title, #knowledge-category")) scheduleKnowledgeSave();
       if (event.target.matches("#resume-name, #resume-target-role, #resume-content")) {
         clearTimeout(resumeSaveTimer);
         resumeSaveTimer = setTimeout(() => persistResumeEditor(false), 900);
@@ -1167,9 +1314,16 @@
       const button = event.target.closest("[data-action]");
       if (!button) return;
       const action = button.dataset.action;
+      if (action === "focus-knowledge") {
+        const focused = document.body.classList.toggle("knowledge-focus");
+        button.textContent = focused ? "退出专注" : "专注写作";
+        button.setAttribute("aria-pressed", String(focused));
+        return;
+      }
       if (action === "create-knowledge") { await createKnowledgeDocument(); return; }
       if (action === "select-knowledge") {
-        await persistKnowledgeDocument(false);
+        clearTimeout(knowledgeSaveTimer);
+        if ($("#knowledge-title") && !(await persistKnowledgeDocument(false))) return;
         selectedKnowledgeId = button.dataset.documentId;
         render(); return;
       }
@@ -1223,7 +1377,7 @@
       if (action === "delete-job") { await deleteJob(button.dataset.jobId); return; }
       if (action === "terminate-job") { await terminateJob(button.dataset.jobId); return; }
       if (action === "set-stage") {
-        const job = getJob(currentJobId); if (!job) return;
+        const job = getJob(currentJobId); if (!job || job.status !== "applied") return;
         const nextStage = Number(button.dataset.stage);
         if (isDesktop) {
           try {
@@ -1238,7 +1392,27 @@
         if (job.stageIndex === 5 && !job.activeRound) job.activeRound = "first";
         render(); showToast(`已更新到「${stageNames[job.stageIndex]}」`); return;
       }
-      if (action === "open-interview") { openInterview(button.dataset.round); return; }
+      if (action === "save-exam-time" || action === "clear-exam-time") {
+        const job = getJob(button.dataset.jobId);
+        if (!job) return;
+        const date = action === "clear-exam-time" ? "" : $("#exam-date")?.value || "";
+        const time = action === "clear-exam-time" ? "" : $("#exam-time")?.value || "";
+        if ((date && !time) || (!date && time)) { showToast("请同时填写笔试日期和时间"); return; }
+        if (isDesktop) {
+          try {
+            await desktopInvoke("save_exam_time", { jobId: job.id, date, time });
+            await refreshNativeData();
+            showToast(action === "clear-exam-time" ? "笔试时间已清空" : "笔试时间已保存");
+          } catch (error) { showToast(`笔试时间未保存：${String(error)}`); }
+          return;
+        }
+        job.examAt = date ? `${date}T${time}` : "";
+        job.updated = "刚刚";
+        render();
+        showToast(action === "clear-exam-time" ? "笔试时间已清空" : "笔试时间已保存");
+        return;
+      }
+      if (action === "open-interview") { if (button.dataset.jobId) currentJobId = button.dataset.jobId; openInterview(button.dataset.round); return; }
       if (action === "apply-job") { await applyOpportunity(button.dataset.jobId); return; }
       if (action === "select-archive-job") {
         archiveSelection.jobId = button.dataset.jobId;
@@ -1261,7 +1435,10 @@
       }
       if (action === "save-interview") {
         saveCurrentQuestion(); const job = getJob(currentJobId); const session = getSession(job, currentRoundId);
-        if (!session.date) session.date = new Date().toISOString().slice(0,10);
+        if (!session.date) {
+          const now = new Date();
+          session.date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+        }
         session.result = $("#interview-result")?.value || "进行中";
         if (isDesktop) {
           try {
@@ -1269,6 +1446,7 @@
               jobId: job.id,
               roundType: currentRoundId,
               date: session.date,
+              time: session.time || "",
               result: session.result,
               summary: $("#session-summary")?.value || "",
               questions: session.questions.map((item, index) => ({ id: item.id || `q-${index}`, question: item.question || "", answer: item.answer || "" })),
@@ -1320,17 +1498,21 @@
       }
     });
 
-    $("#global-search").addEventListener("input", event => {
-      searchQuery = event.target.value;
+    $("#global-search").addEventListener("input", async event => {
+      const query = event.target.value;
       if (activeView === "knowledge") {
         clearTimeout(knowledgeSaveTimer);
-        persistKnowledgeDocument(false).then(() => render());
+        if ($("#knowledge-title") && !(await persistKnowledgeDocument(false))) return;
+        searchQuery = query;
+        render();
         return;
       }
+      searchQuery = query;
       if (activeView !== "interview" && activeView !== "resumes") render();
     });
     document.addEventListener("change", event => {
       if (event.target.id === "city-filter") { cityFilter = event.target.value; render(); return; }
+      if (event.target.id === "opportunity-filter") { opportunityFilter = event.target.value; cityFilter = ""; render(); return; }
       if (event.target.id === "opportunity-sort") { opportunitySort = event.target.value; render(); return; }
       if (event.target.id !== "round-choice") return;
       saveCurrentQuestion(); currentRoundId = event.target.value;
@@ -1384,6 +1566,8 @@
         saveButton.disabled = true;
         try {
           await desktopInvoke("create_jobs", { drafts });
+          opportunityFilter = "pending";
+          cityFilter = "";
           await refreshNativeData();
           $("#add-dialog").close(); setView("opportunities");
           showToast(`已导入 ${drafts.length} 个岗位`);
@@ -1408,6 +1592,23 @@
       }
     });
 
+    document.addEventListener("keydown", event => {
+      if (!event.defaultPrevented && activeView === "knowledge" && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault(); persistKnowledgeDocument(true);
+      }
+      if (event.key === "Escape" && !$("dialog[open]") && document.body.classList.contains("knowledge-focus")) {
+        document.body.classList.remove("knowledge-focus");
+        const button = $('[data-action="focus-knowledge"]');
+        if (button) { button.textContent = "专注写作"; button.setAttribute("aria-pressed", "false"); }
+      }
+    });
+    document.addEventListener("knowledge-editor-ready", () => {
+      if (activeView === "knowledge") render();
+      if (isDesktop) window.KnowledgeEditor.guardClose(async () => {
+        if (activeView === "knowledge" && $("#knowledge-title")) return persistKnowledgeDocument(false);
+        return true;
+      }).catch(error => showToast(`关闭前保存未启用：${String(error)}`));
+    });
     render();
     initializeDesktop();
   </script>

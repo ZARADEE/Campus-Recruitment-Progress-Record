@@ -1,0 +1,111 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+
+export async function verifyRichEditor({ evaluate, click, fill, until, cdp, capture, native }) {
+  const command = name => click(`[data-editor-command="${name}"]`);
+  await until('!!window.KnowledgeEditor?.editor');
+  const documentId = await evaluate('selectedKnowledgeId');
+  await fill('#knowledge-title', '前端请求与状态管理');
+  await fill('#knowledge-category', '前端 / JavaScript');
+  await fill('#knowledge-content', '请求与状态管理\n核心原则\n避免过期响应覆盖新的结果。\n实践清单\n取消旧请求\n校验请求序号');
+  const selectText = async text => evaluate(`(() => { const editor = KnowledgeEditor.editor; let found; editor.state.doc.descendants((node, pos) => { if (node.isText && node.text.includes(${JSON.stringify(text)})) found = {from:pos, to:pos + node.nodeSize}; }); if (!found) throw new Error('Missing text'); editor.commands.setTextSelection(found); })()`);
+  const blockStyle = async value => evaluate(`(() => { const select = document.querySelector('#knowledge-block-type'); select.value = ${JSON.stringify(value)}; select.dispatchEvent(new Event('change', {bubbles:true})); })()`);
+  await selectText('请求与状态管理'); await blockStyle('h1');
+  await selectText('核心原则'); await blockStyle('h2');
+  await selectText('实践清单'); await blockStyle('h3');
+  assert.deepEqual(await evaluate('Array.from(document.querySelectorAll("#knowledge-content h1,#knowledge-content h2,#knowledge-content h3")).map(node => node.tagName)'), ['H1', 'H2', 'H3']);
+  assert.equal(await evaluate('document.querySelectorAll("#knowledge-outline button").length'), 3, 'Headings create an outline');
+  await click('#knowledge-outline button:nth-child(2)');
+  assert.equal(await evaluate('KnowledgeEditor.editor.state.selection.$from.parent.textContent'), '核心原则', 'Outline navigation selects its heading');
+  await selectText('避免过期响应'); await command('bold'); await command('highlight');
+  assert(await evaluate('!!document.querySelector("#knowledge-content strong") && !!document.querySelector("#knowledge-content mark")'));
+  await command('undo');
+  assert.equal(await evaluate('document.querySelector("#knowledge-content mark")'), null);
+  await command('redo');
+  assert(await evaluate('!!document.querySelector("#knowledge-content mark")'));
+  await selectText('避免过期响应');
+  await command('link');
+  await fill('#knowledge-link-url', 'https://developer.mozilla.org/');
+  await click('#knowledge-link-dialog button[value=save]');
+  assert.equal(await evaluate('document.querySelector("#knowledge-content a").getAttribute("href")'), 'https://developer.mozilla.org/');
+  assert.equal(await evaluate('document.querySelector("#knowledge-content a").textContent'), '避免过期响应覆盖新的结果。');
+  assert(await evaluate('!!document.querySelector("#knowledge-content strong") && !!document.querySelector("#knowledge-content mark")'), 'Adding a link preserves existing formatting');
+  await selectText('取消旧请求'); await command('bulletList');
+  await selectText('校验请求序号'); await command('bulletList'); await command('indent');
+  assert(await evaluate('!!document.querySelector("#knowledge-content ul ul")'), 'List items can be nested');
+  await command('outdent');
+  assert.equal(await evaluate('document.querySelector("#knowledge-content ul ul")'), null);
+  await evaluate('KnowledgeEditor.editor.commands.focus("end")');
+  await evaluate('KnowledgeEditor.editor.commands.insertContent({type:"paragraph",content:[{type:"text",text:"补充自动化测试"}]})');
+  await command('taskList');
+  await click('#knowledge-content input[type=checkbox]');
+  assert(await evaluate('!!document.querySelector("#knowledge-content li[data-checked=true]")'));
+  await evaluate('KnowledgeEditor.editor.commands.insertContentAt(KnowledgeEditor.editor.state.doc.content.size, {type:"paragraph",content:[{type:"text",text:"const controller = new AbortController();"}]})');
+  await selectText('const controller'); await command('codeBlock');
+  assert(await evaluate('!!document.querySelector("#knowledge-content pre code")'));
+  await evaluate('KnowledgeEditor.editor.commands.insertContentAt(KnowledgeEditor.editor.state.doc.content.size, {type:"paragraph"})');
+  await evaluate('KnowledgeEditor.editor.commands.focus("end")');
+  await command('table');
+  await command('addRowAfter'); await command('addColumnAfter');
+  assert.equal(await evaluate('document.querySelectorAll("#knowledge-content tr").length'), 4);
+  assert.equal(await evaluate('document.querySelectorAll("#knowledge-content tr:first-child > *").length'), 4);
+  await command('deleteRow'); await command('deleteColumn');
+  assert.equal(await evaluate('document.querySelectorAll("#knowledge-content tr").length'), 3);
+
+  const imageFixture = `(() => { const canvas = document.createElement('canvas'); canvas.width=480; canvas.height=150; const ctx=canvas.getContext('2d'); ctx.fillStyle='#e6f2ea'; ctx.fillRect(0,0,480,150); ctx.fillStyle='#17674b'; ctx.font='24px sans-serif'; ctx.fillText('Request → Check → Update',30,80); const bytes=Uint8Array.from(atob(canvas.toDataURL('image/png').split(',')[1]), ch=>ch.charCodeAt(0)); return new File([bytes], 'request-flow.png', {type:'image/png'}); })()`;
+  await evaluate('KnowledgeEditor.editor.commands.focus("end")');
+  await evaluate(`(() => { const transfer = new DataTransfer(); transfer.items.add(${imageFixture}); const input = document.querySelector('#knowledge-image-file'); input.files=transfer.files; input.dispatchEvent(new Event('change', {bubbles:true})); })()`);
+  await until('document.querySelectorAll("#knowledge-content img").length === 1 && !KnowledgeEditor.isBusy()');
+  await evaluate(`(() => { const transfer = new DataTransfer(); transfer.items.add(${imageFixture}); KnowledgeEditor.editor.view.dom.dispatchEvent(new ClipboardEvent('paste', {clipboardData:transfer,bubbles:true,cancelable:true})); })()`);
+  await until('document.querySelectorAll("#knowledge-content img").length === 2 && !KnowledgeEditor.isBusy()');
+  await evaluate('KnowledgeEditor.editor.commands.focus("end")');
+  await evaluate(`(() => { const transfer = new DataTransfer(); transfer.items.add(${imageFixture}); const editor = KnowledgeEditor.editor.view.dom; const rect = editor.lastElementChild.getBoundingClientRect(); editor.dispatchEvent(new DragEvent('drop', {dataTransfer:transfer,clientX:rect.left+10,clientY:rect.top+5,bubbles:true,cancelable:true})); })()`);
+  await until('document.querySelectorAll("#knowledge-content img").length === 3 && !KnowledgeEditor.isBusy()');
+  await evaluate('(() => { let position; KnowledgeEditor.editor.state.doc.descendants((node,pos) => { if(node.type.name === "image" && position == null) position=pos; }); KnowledgeEditor.editor.commands.setNodeSelection(position); })()');
+  await command('imageHalf');
+  assert(await evaluate('KnowledgeEditor.editor.getAttributes("image").width < 480'), 'Selected images can be resized');
+  await command('imageAlt'); await fill('#knowledge-image-alt', '请求处理示意图');
+  await click('#knowledge-image-dialog button[value=save]');
+  assert(await evaluate('!!document.querySelector("#knowledge-content img[alt=请求处理示意图]")'));
+  await evaluate('KnowledgeEditor.editor.commands.focus("end")');
+  await cdp('Input.insertText', { text: '中文输入与图片可以一起保存。' });
+  await click('[data-action=save-knowledge]');
+  await until('document.querySelector("#knowledge-save-state").dataset.state === "saved"');
+  assert.equal(await evaluate('document.querySelectorAll(".knowledge-folder .knowledge-folder").length'), 1, 'Category paths create nested folders');
+  const saved = await evaluate('KnowledgeEditor.getContent()');
+  await click('[data-action=focus-knowledge]');
+  assert.equal(await evaluate('getComputedStyle(document.querySelector(".sidebar")).display'), 'none');
+  await click('[data-action=focus-knowledge]');
+  if (!native) assert(await evaluate('document.documentElement.scrollWidth <= 390'), 'Rich text, tables and images fit the mobile viewport');
+  await cdp('Page.reload');
+  await until(`typeof knowledgeDocuments !== 'undefined' && knowledgeDocuments.some(doc => doc.id === ${JSON.stringify(documentId)}) && !!window.KnowledgeEditor`);
+  await click('[data-view=knowledge]');
+  await until('!!KnowledgeEditor.editor');
+  const comparable = content => JSON.parse(content, (key, value) => key === 'src' ? createHash('sha256').update(value).digest('hex') : value);
+  assert.deepEqual(comparable(await evaluate('KnowledgeEditor.getContent()')), comparable(saved), 'All formatting and image data survive reload');
+  await until('Array.from(document.querySelectorAll("#knowledge-content img")).every(image => image.complete && image.naturalWidth > 0)');
+  assert(await evaluate('KnowledgeEditor.getText().includes("中文输入与图片可以一起保存。")'));
+  if (native) {
+    const storage = await evaluate(`(async () => {
+      const id = await desktopInvoke('create_knowledge_document', {category:'测试',title:'图片容量检查'});
+      try {
+        const doc = KnowledgeEditor.editor.getJSON();
+        const image = doc.content.find(node => node.type === 'image');
+        let content = '';
+        do { doc.content.push(image); content = JSON.stringify({format:'campus-knowledge-v1',doc}); } while (content.length < 2100000);
+        await desktopInvoke('save_knowledge_document', {documentId:id,category:'测试',title:'图片容量检查',content});
+        const saved = (await desktopInvoke('list_knowledge_documents')).find(item => item.id === id).content === content;
+        let rejected = false;
+        try { await desktopInvoke('save_knowledge_document', {documentId:id,category:'测试',title:'图片容量检查',content:'x'.repeat(24*1024*1024+1)}); } catch { rejected = true; }
+        const retained = (await desktopInvoke('list_knowledge_documents')).find(item => item.id === id).content === content;
+        return {saved,rejected,retained};
+      } finally { await desktopInvoke('delete_knowledge_document',{documentId:id}); }
+    })()`);
+    assert.deepEqual(storage, {saved:true,rejected:true,retained:true}, 'Documents with over 2 MB of images persist; oversized writes keep the saved version');
+  }
+  await fill('#global-search', '请求处理示意图');
+  await until('!!KnowledgeEditor.editor && document.querySelector("#knowledge-title").value === "前端请求与状态管理"');
+  await fill('#global-search', '');
+  await evaluate('window.scrollTo({top:0,behavior:"instant"})');
+  await capture('rich-knowledge-editor.png');
+}

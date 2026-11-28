@@ -15,6 +15,7 @@
       {
         "label": "main",
         "create": false,
+        "dragDropEnabled": false,
         "title": "求职进度台",
         "width": 1152,
         "height": 640,

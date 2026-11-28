@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test:knowledge": "node --test scripts/knowledge-content.test.mjs",
     "dev": "vite --host 127.0.0.1 --port 1420 --strictPort",
     "build": "vite build",
     "tauri": "tauri",
@@ -12,7 +13,17 @@
     "desktop:test": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/desktop.ps1 test"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.0.0"
+    "@tauri-apps/api": "^2.0.0",
+    "@tiptap/core": "^3.35.0",
+    "@tiptap/extension-code": "3.35.0",
+    "@tiptap/extension-highlight": "^3.35.0",
+    "@tiptap/extension-image": "^3.35.0",
+    "@tiptap/extension-placeholder": "^3.35.0",
+    "@tiptap/extension-table": "^3.35.0",
+    "@tiptap/extension-task-item": "^3.35.0",
+    "@tiptap/extension-task-list": "^3.35.0",
+    "@tiptap/pm": "^3.35.0",
+    "@tiptap/starter-kit": "^3.35.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",

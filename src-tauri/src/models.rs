@@ -36,6 +36,7 @@ pub struct JobRecord {
     pub status: String,
     pub stage_index: usize,
     pub active_round: String,
+    pub exam_at: String,
     pub posted: Option<String>,
     pub created: String,
     pub applied_at: Option<String>,
@@ -63,6 +64,8 @@ pub struct KnowledgeDocument {
 #[serde(rename_all = "camelCase")]
 pub struct InterviewSession {
     pub date: String,
+    #[serde(default)]
+    pub time: String,
     pub result: String,
     pub summary: String,
     pub questions: Vec<InterviewQuestion>,
